@@ -54,7 +54,7 @@ var TimeDiffPlugin = class extends import_obsidian.Plugin {
       var taskExp = /-\s+\[(\s|\w)\]\s+/g
       this.addCommand({
         id: "task-processing-extension-compute-time-total",
-        name: "compute total time in current file",
+        name: "time total",
         editorCallback: (editor, view) => {
 
             let notice = "### 工时统计\n---\n";
