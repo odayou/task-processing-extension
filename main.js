@@ -77,22 +77,35 @@ var TimeDiffPlugin = class extends import_obsidian.Plugin {
           }
       });
  
-	  this.addCommand({
-        id: "task-processing-extension-add-checkbox-no-checked",
-        name: "Insert Checkbox noChecked",
-        editorCallback: (editor) => {
-          editor.replaceSelection("- [ ] ");
-        }
+      this.addCommand({
+          id: "task-processing-extension-add-checkbox-no-checked",
+          name: "Insert Checkbox noChecked",
+          editorCallback: (editor) => {
+            editor.replaceSelection("- [ ] ");
+          }
+        });
+      
+      this.addCommand({
+          id: "task-processing-extension-add-checkbox-checked",
+          name: "Insert Checkbox Checked",
+          editorCallback: (editor) => {
+            editor.replaceSelection("- [x] ");
+          }
       });
-	  
-	  this.addCommand({
-        id: "task-processing-extension-add-checkbox-checked",
-        name: "Insert Checkbox Checked",
+
+      this.addCommand({
+        id: "task-processing-extension-insert-time-clock",
+        name: "Insert Now Time Clock",
         editorCallback: (editor) => {
-          editor.replaceSelection("- [x] ");
+            const date = new Date();
+            const year = date.getFullYear();  
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');  
+            const day = date.getDate().toString().padStart(2, '0');
+            const hour = date.getHours().toString().padStart(2, '0');
+            const minute = date.getMinutes().toString().padStart(2, '0');  
+            editor.replaceSelection(`${hour}:${minute}`);
         }
-      });
-	  
+    });
     });
   }
   onunload() {
