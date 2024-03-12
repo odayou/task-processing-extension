@@ -1,0 +1,11 @@
+{
+	"id": "obsidian-task-processing-extension",
+	"name": "obsidian-task-processing-extension",
+	"version": "0.0.1",
+	"minAppVersion": "0.12.0",
+	// 任务处理优化插件 1. 快捷插入todo指令 2.快速统计当前笔记中事项的耗时，及总耗时
+	"description": "任务处理优化插件 1. 快捷插入todo指令 2.快速统计当前笔记中事项的耗时，及总耗时 \n tasks processing optimization plugin for Obsidian. 1. Quickly insert todo directive. 2. Quickly count the time spent on tasks in the current note and the total time spent.",
+	"author": "tommy.li (https://github.com/odayou)",
+	"authorUrl": "https://github.com/odayou/obsidian-task-processing-extension",
+	"isDesktopOnly": false
+}
