@@ -1,5 +1,7 @@
 # Obsidian Task Processing Extension Plugin
 
+中文文档 [README](https://github.com/odayou/obsidian-task-processing-extension/blob/master/README.md)
+
 > An [Obsidian](https://obsidian.md/) plugin for processing tasks, Features：including time statistics, insertion task, and insertion current time.
 >
 > Developed based on the needs of my own work flow and [the demand of a friend on website](https://forum-zh.obsidian.md/t/topic/30252/4). Any suggestions are welcome.
