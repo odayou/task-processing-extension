@@ -1,6 +1,6 @@
-# Obsidian Task Processing Extension
+# Obsidian 任务处理扩展插件
 
-> 一个 [Obsidian](https://obsidian.md/) 插件，用于处理任务的统计、插入、快捷编辑等功能
+> 一个 [Obsidian](https://obsidian.md/) 插件，用于处理任务的统计、插入任务、插入时刻等功能
 >
 > 基于自己的工作流和[一个网友的诉求](https://forum-zh.obsidian.md/t/topic/30252/4)开发的一个Obsidian插件，欢迎大家提出宝贵意见。
 >
@@ -8,7 +8,7 @@
 
 ## 仓库地址
 
-[odayou/obsidian-task-processing-extension (github.com)](https://github.com/odayou/obsidian-task-processing-extension)
+[odayou/obsidian-task-processing-extension](https://github.com/odayou/obsidian-task-processing-extension)
 
 ## 功能
 
