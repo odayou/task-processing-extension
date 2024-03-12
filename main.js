@@ -51,7 +51,7 @@ var import_obsidian = require("obsidian");
 var TimeDiffPlugin = class extends import_obsidian.Plugin {
   onload() {
     return __async(this, null, function* () {
-      var taskExp = /-\s+\[(\s|\w)\]\s+/g
+      var taskExp = /\s*-\s+\[(\s|\w)\]\s+/g
       this.addCommand({
         id: "task-processing-extension-compute-time-total",
         name: "time total",
