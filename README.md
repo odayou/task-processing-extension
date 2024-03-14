@@ -1,96 +1,48 @@
-# Obsidian Sample Plugin
+# Obsidian 任务处理扩展插件
 
-This is a sample plugin for Obsidian (https://obsidian.md).
+english [README](https://github.com/odayou/task-processing-extension/blob/master/README_en.md)
 
-This project uses Typescript to provide type checking and documentation.
-The repo depends on the latest plugin API (obsidian.d.ts) in Typescript Definition format, which contains TSDoc comments describing what it does.
+> 一个 [Obsidian](https://obsidian.md/) 插件，用于处理任务的统计、插入任务、插入时刻等功能
+>
+> 基于自己的工作流和[一个网友的诉求](https://forum-zh.obsidian.md/t/topic/30252/4)开发的一个Obsidian插件，欢迎大家提出宝贵意见。
+>
+> 由于是第一次开发插件，还不会发布到插件中心
 
-**Note:** The Obsidian API is still in early alpha and is subject to change at any time!
+## 仓库地址
 
-This sample plugin demonstrates some of the basic functionality the plugin API can do.
-- Adds a ribbon icon, which shows a Notice when clicked.
-- Adds a command "Open Sample Modal" which opens a Modal.
-- Adds a plugin setting tab to the settings page.
-- Registers a global click event and output 'click' to the console.
-- Registers a global interval which logs 'setInterval' to the console.
+[odayou/obsidian-task-processing-extension](https://github.com/odayou/task-processing-extension)
 
-## First time developing plugins?
+## 功能
 
-Quick starting guide for new plugin devs:
+1. 通过命令插入计算事项花费时间的块（会查找当前文档的待办进行计算）在光标处
+2. 通过命令插入待办/已办事项在光标处
+3. 通过命令插入当前的时刻在光标处
 
-- Check if [someone already developed a plugin for what you want](https://obsidian.md/plugins)! There might be an existing plugin similar enough that you can partner up with.
-- Make a copy of this repo as a template with the "Use this template" button (login to GitHub if you don't see it).
-- Clone your repo to a local development folder. For convenience, you can place this folder in your `.obsidian/plugins/your-plugin-name` folder.
-- Install NodeJS, then run `npm i` in the command line under your repo folder.
-- Run `npm run dev` to compile your plugin from `main.ts` to `main.js`.
-- Make changes to `main.ts` (or create new `.ts` files). Those changes should be automatically compiled into `main.js`.
-- Reload Obsidian to load the new version of your plugin.
-- Enable plugin in settings window.
-- For updates to the Obsidian API run `npm update` in the command line under your repo folder.
+## 使用方式
 
-## Releasing new releases
+在编辑视图下，在具有任务（标准task格式）、花费时刻的文档中，调用命令`time total`, 即可在光标出插入任务的计算结果，分别列出每个任务的花费及总花费
 
-- Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
-- Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
-- Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
-- Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments. Note: The manifest.json file must be in two places, first the root path of your repository and also in the release.
-- Publish the release.
+## 演示
 
-> You can simplify the version bump process by running `npm version patch`, `npm version minor` or `npm version major` after updating `minAppVersion` manually in `manifest.json`.
-> The command will bump version in `manifest.json` and `package.json`, and add the entry for the new version to `versions.json`
+- 计算既有任务的时间
+![任务耗时统计演示](./screen/任务耗时统计演示.gif)
+- 几个快捷命令演示
+![任务快捷编辑演示](./screen/任务快捷编辑演示.gif)
 
-## Adding your plugin to the community plugin list
+## 局限及注意
 
-- Check https://github.com/obsidianmd/obsidian-releases/blob/master/plugin-review.md
-- Publish an initial version.
-- Make sure you have a `README.md` file in the root of your repo.
-- Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin.
+- 无法自动实时计算，一方面我没研究出来怎么做，另一方面我觉得时间统计无非就是在想知道的时候触发一下统计，自动计算这些可能属于过渡设计，或者性价比不高的特性
+- 第一次开发插件，我目前知道命令只能在编辑视图下插文档内容，预览模式下我还没研究过
+- 我设计的功能是：从文档中匹配出待办并计算汇总时间，也就是只能匹配 "- [ ] " 、"- [X] " 、" - [x] "这种开头的任务，计算指定格式的时刻，包括任务的格式/位置，时间的格式/位置请按照我演示图或示例数据中进行，你也可以按照自己的诉求自己改代码定义匹配格式, 改下匹配部分的代码，不难
+- 如果未来有业余时间改造方向如下：1. 目前功能1多次触发会重复插入统计块，将来做成可自动替换的 2. 可能交互形式重新设计，比如做成菜单或者自动实时计算的功能 3.可以计算开始、结束时间跨日期的时间差，目前默认都是同一天
+- 注意：如果不改动代码一定要按照我预设的格式记录时间否则会出现计算错误的情况，如 任务名中间**不要**有空格、任务名和时间中间**要有**空格、时间格式必须是**时刻:分钟**等，我在下面贴出我的待办数据，自己细品下格式
+  
+## 示例数据
 
-## How to use
-
-- Clone this repo.
-- Make sure your NodeJS is at least v16 (`node --version`).
-- `npm i` or `yarn` to install dependencies.
-- `npm run dev` to start compilation in watch mode.
-
-## Manually installing the plugin
-
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
-
-## Improve code quality with eslint (optional)
-- [ESLint](https://eslint.org/) is a tool that analyzes your code to quickly find problems. You can run ESLint against your plugin to find common bugs and ways to improve your code. 
-- To use eslint with this project, make sure to install eslint from terminal:
-  - `npm install -g eslint`
-- To use eslint to analyze this project use this command:
-  - `eslint main.ts`
-  - eslint will then create a report with suggestions for code improvement by file and line number.
-- If your source code is in a folder, such as `src`, you can use eslint with this command to analyze all files in that folder:
-  - `eslint .\src\`
-
-## Funding URL
-
-You can include funding URLs where people who use your plugin can financially support it.
-
-The simple way is to set the `fundingUrl` field to your link in your `manifest.json` file:
-
-```json
-{
-    "fundingUrl": "https://buymeacoffee.com"
-}
+```markdown
+- [ ] task1 10:21-10:30
+    - [ ] task1-1 09:00-10:00  13:00-14:00
+    - [ ] task1-2  15:00-16:10  17:00-18:20
+- [x] task2 16:10-17:00
+    - [ ] tast2-2 10:00-13:00 19:00-20:20
 ```
-
-If you have multiple URLs, you can also do:
-
-```json
-{
-    "fundingUrl": {
-        "Buy Me a Coffee": "https://buymeacoffee.com",
-        "GitHub Sponsor": "https://github.com/sponsors",
-        "Patreon": "https://www.patreon.com/"
-    }
-}
-```
-
-## API Documentation
-
-See https://github.com/obsidianmd/obsidian-api
