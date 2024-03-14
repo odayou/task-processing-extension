@@ -1,4 +1,4 @@
-import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { Editor, Plugin } from 'obsidian';
 
 // Remember to rename these classes and interfaces!
 
@@ -12,70 +12,61 @@ const DEFAULT_SETTINGS: MyPluginSettings = {
 
 export default class MyPlugin extends Plugin {
 	settings: MyPluginSettings;
-
 	async onload() {
-		await this.loadSettings();
-
-		// This creates an icon in the left ribbon.
-		const ribbonIconEl = this.addRibbonIcon('dice', 'Sample Plugin', (evt: MouseEvent) => {
-			// Called when the user clicks the icon.
-			new Notice('This is a notice!');
-		});
-		// Perform additional things with the ribbon
-		ribbonIconEl.addClass('my-plugin-ribbon-class');
-
-		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
-		const statusBarItemEl = this.addStatusBarItem();
-		statusBarItemEl.setText('Status Bar Text');
-
-		// This adds a simple command that can be triggered anywhere
+		const taskExp = /\s*(-|\*)\s+\[(\s|\w)\]\s+/g
 		this.addCommand({
-			id: 'open-sample-modal-simple',
-			name: 'Open sample modal (simple)',
-			callback: () => {
-				new SampleModal(this.app).open();
-			}
-		});
-		// This adds an editor command that can perform some operation on the current editor instance
-		this.addCommand({
-			id: 'sample-editor-command',
-			name: 'Sample editor command',
-			editorCallback: (editor: Editor, view: MarkdownView) => {
-				console.log(editor.getSelection());
-				editor.replaceSelection('Sample Editor Command');
-			}
-		});
-		// This adds a complex command that can check whether the current state of the app allows execution of the command
-		this.addCommand({
-			id: 'open-sample-modal-complex',
-			name: 'Open sample modal (complex)',
-			checkCallback: (checking: boolean) => {
-				// Conditions to check
-				const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
-				if (markdownView) {
-					// If checking is true, we're simply "checking" if the command can be run.
-					// If checking is false, then we want to actually perform the operation.
-					if (!checking) {
-						new SampleModal(this.app).open();
+			id: "task-processing-extension-compute-time-total",
+			name: "time total",
+			editorCallback: (editor: Editor) => {
+
+				let notice = "### 工时统计\n---\n";
+				// const file = this.app.workspace.getActiveFile();
+
+				const data = editor.editorComponent.view.data;
+				let allSum = 0;
+				data.split("\n").forEach((row: { match: (arg0: RegExp) => null; replaceAll: (arg0: RegExp, arg1: string) => any; }) => {
+					if (row.match(taskExp) == null) {
+						return;
 					}
-
-					// This command will only show up in Command Palette when the check function returns true
-					return true;
-				}
+					const extractedWithoutCodeblocks = row.replaceAll(taskExp, "");
+					const [taskName, totalSumInMinutes] = computeTaskTime(extractedWithoutCodeblocks)
+					allSum += isNaN(totalSumInMinutes) ? 0 : totalSumInMinutes;
+					notice += `${taskName}: ${minutesToHours(totalSumInMinutes)}\n`;
+				})
+				notice += `\n\n---\n工作总时长花费:${minutesToHours(allSum)}小时\n\n最后统计时间: ${new Date().toLocaleString()}\n\n---\n`;
+				editor.replaceRange(notice, editor.getCursor());
 			}
 		});
 
-		// This adds a settings tab so the user can configure various aspects of the plugin
-		this.addSettingTab(new SampleSettingTab(this.app, this));
-
-		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
-		// Using this function will automatically remove the event listener when this plugin is disabled.
-		this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
-			console.log('click', evt);
+		this.addCommand({
+			id: "task-processing-extension-add-checkbox-no-checked",
+			name: "Insert Checkbox noChecked",
+			editorCallback: (editor) => {
+				editor.replaceSelection("- [ ] ");
+			}
 		});
 
-		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
-		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
+		this.addCommand({
+			id: "task-processing-extension-add-checkbox-checked",
+			name: "Insert Checkbox Checked",
+			editorCallback: (editor) => {
+				editor.replaceSelection("- [x] ");
+			}
+		});
+
+		this.addCommand({
+			id: "task-processing-extension-insert-time-clock",
+			name: "Insert Now Time Clock",
+			editorCallback: (editor) => {
+				const date = new Date();
+				// const year = date.getFullYear();  
+				// const month = (date.getMonth() + 1).toString().padStart(2, '0');  
+				// const day = date.getDate().toString().padStart(2, '0');
+				const hour = date.getHours().toString().padStart(2, '0');
+				const minute = date.getMinutes().toString().padStart(2, '0');
+				editor.replaceSelection(`${hour}:${minute}`);
+			}
+		});
 	}
 
 	onunload() {
@@ -91,44 +82,41 @@ export default class MyPlugin extends Plugin {
 	}
 }
 
-class SampleModal extends Modal {
-	constructor(app: App) {
-		super(app);
-	}
-
-	onOpen() {
-		const {contentEl} = this;
-		contentEl.setText('Woah!');
-	}
-
-	onClose() {
-		const {contentEl} = this;
-		contentEl.empty();
-	}
+function computeTaskTime(taskEventData: string) : any[] {
+	const data = taskEventData.split(" ");
+	const taskName = data[0];
+	let totalSumInMinutes = 0;
+	data.forEach((item, index) => {
+		if (index === 0) {
+			return;
+		}
+		const clocks = item.split("-");
+		if (clocks.length != 2) {
+			return;
+		}
+		const diffInMinutes = clockDiffMinutes(clocks[0], clocks[1]);
+		totalSumInMinutes += isNaN(diffInMinutes) ? 0 : diffInMinutes;
+	})
+	return [taskName, totalSumInMinutes]
 }
 
-class SampleSettingTab extends PluginSettingTab {
-	plugin: MyPlugin;
+function clockToTime(clockString: string): Date {
+	const now = new Date();
+	const [hours, minutes] = clockString.split(":");
+	return new Date(now.getFullYear(), now.getMonth(), now.getDate(), Number(hours), Number(minutes));
+}
 
-	constructor(app: App, plugin: MyPlugin) {
-		super(app, plugin);
-		this.plugin = plugin;
-	}
+function clockDiffMinutes(before: string, after: string) {
+	// 计算 "10:25"， "12:25" 这种时间相差多少小时，精确到小数点后1位数， 如果字符串中没有日期，则默认日期为当天，有日期则按照日期计算
+	const befeoreTime = clockToTime(before);
+	const afterTime = clockToTime(after);
+	const diff = afterTime.getTime() - befeoreTime.getTime();
+	const diffInMinutes = Math.round(diff / 1000 / 60);
+	return diffInMinutes;
+}
 
-	display(): void {
-		const {containerEl} = this;
-
-		containerEl.empty();
-
-		new Setting(containerEl)
-			.setName('Setting #1')
-			.setDesc('It\'s a secret')
-			.addText(text => text
-				.setPlaceholder('Enter your secret')
-				.setValue(this.plugin.settings.mySetting)
-				.onChange(async (value) => {
-					this.plugin.settings.mySetting = value;
-					await this.plugin.saveSettings();
-				}));
-	}
+function minutesToHours(minutes: number, toFixed = 2) {
+	// 分钟数转换为小时数，精确到小数点后两位
+	const diffInHours = (minutes / 60).toFixed(toFixed);
+	return diffInHours;
 }
