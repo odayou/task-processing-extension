@@ -1,17 +1,15 @@
 import { Editor, Plugin } from 'obsidian';
 
-// Remember to rename these classes and interfaces!
-
-interface MyPluginSettings {
-	mySetting: string;
+interface TimeSaverPluginSettings {
+	autoCompute: string;
 }
 
-const DEFAULT_SETTINGS: MyPluginSettings = {
-	mySetting: 'default'
+const DEFAULT_SETTINGS: TimeSaverPluginSettings = {
+	autoCompute: 'default'
 }
 
-export default class MyPlugin extends Plugin {
-	settings: MyPluginSettings;
+export default class TimeSaverPlugin extends Plugin {
+	settings: TimeSaverPluginSettings;
 	async onload() {
 		const taskExp = /\s*(-|\*)\s+\[(\s|\w)\]\s+/g
 		this.addCommand({
