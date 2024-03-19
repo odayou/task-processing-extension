@@ -15,14 +15,14 @@ export default class MyPlugin extends Plugin {
 	async onload() {
 		const taskExp = /\s*(-|\*)\s+\[(\s|\w)\]\s+/g
 		this.addCommand({
-			id: "task-processing-extension-compute-time-total",
-			name: "time total",
+			id: "compute-total-time",
+			name: "Coumpute total time",
 			editorCallback: (editor: Editor) => {
 
-				let notice = "### 工时统计\n---\n";
+				let notice = "### 时间花费统计\n---\n";
 				// const file = this.app.workspace.getActiveFile();
 
-				const data = editor.editorComponent.view.data;
+				const data = editor.getValue();
 				let allSum = 0;
 				data.split("\n").forEach((row: { match: (arg0: RegExp) => null; replaceAll: (arg0: RegExp, arg1: string) => any; }) => {
 					if (row.match(taskExp) == null) {
@@ -31,32 +31,32 @@ export default class MyPlugin extends Plugin {
 					const extractedWithoutCodeblocks = row.replaceAll(taskExp, "");
 					const [taskName, totalSumInMinutes] = computeTaskTime(extractedWithoutCodeblocks)
 					allSum += isNaN(totalSumInMinutes) ? 0 : totalSumInMinutes;
-					notice += `${taskName}: ${minutesToHours(totalSumInMinutes)}\n`;
+					notice += `${taskName}: ${minutesToHours(totalSumInMinutes)}小时\n`;
 				})
-				notice += `\n\n---\n工作总时长花费:${minutesToHours(allSum)}小时\n\n最后统计时间: ${new Date().toLocaleString()}\n\n---\n`;
+				notice += `\n\n---\n花费总时长:${minutesToHours(allSum)}小时\n\n最后统计时间: ${new Date().toLocaleString()}\n\n---\n`;
 				editor.replaceRange(notice, editor.getCursor());
 			}
 		});
 
 		this.addCommand({
-			id: "task-processing-extension-add-checkbox-no-checked",
-			name: "Insert Checkbox noChecked",
+			id: "insert-task-not-finished",
+			name: "Insert unFinished task",
 			editorCallback: (editor) => {
 				editor.replaceSelection("- [ ] ");
 			}
 		});
 
 		this.addCommand({
-			id: "task-processing-extension-add-checkbox-checked",
-			name: "Insert Checkbox Checked",
+			id: "insert-task-finished",
+			name: "Insert finished task",
 			editorCallback: (editor) => {
 				editor.replaceSelection("- [x] ");
 			}
 		});
 
 		this.addCommand({
-			id: "task-processing-extension-insert-time-clock",
-			name: "Insert Now Time Clock",
+			id: "insert-clock-time",
+			name: "Insert the current clock time",
 			editorCallback: (editor) => {
 				const date = new Date();
 				// const year = date.getFullYear();  
