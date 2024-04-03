@@ -1,0 +1,5 @@
+{
+	"copySuccess": "已复制到剪切板",
+	"copyFail": "复制失败",
+	"greeting": "Hello, {{name}}! Welcome to Obsidian."
+}
