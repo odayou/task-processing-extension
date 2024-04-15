@@ -33,6 +33,7 @@ export default class TimeSaverPlugin extends Plugin {
 
 				const data = editor.getValue();
 				let allSum = 0;
+				// @ts-ignore
 				data.split("\n").forEach((row: { match: (arg0: RegExp) => null; replaceAll: (arg0: RegExp, arg1: string) => any; }) => {
 					if (row.match(taskExp) == null) {
 						return;
@@ -253,7 +254,7 @@ function getMarkdownLinkFromCursorPoint(editor: Editor) {
 
 	const markdownLink = getMarkdownLink(line, cursor.ch);
 	if (markdownLink == null) {
-		new Notice("没有markdown链接");
+		// new Notice("没有markdown链接");
 		return null;
 	}
 
