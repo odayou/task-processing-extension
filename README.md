@@ -28,6 +28,8 @@ english [README](https://github.com/odayou/task-processing-extension/blob/master
 ![任务耗时统计演示](./screen/任务耗时统计演示.gif)
 - 几个快捷命令演示
 ![任务快捷编辑演示](./screen/任务快捷编辑演示.gif)
+- 当然所有功能都集成进了右键菜单
+![右键菜单演示](./screen/快捷菜单示例.png)
 
 ## 局限及注意
 

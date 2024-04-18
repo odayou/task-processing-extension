@@ -28,6 +28,8 @@ In the edit view, call the command `time total` to insert a block that calculate
 ![Task time statistics demo](./screen/任务耗时统计演示.gif)
 - Quick commands demo
 ![Task quick editing demo](./screen/任务快捷编辑演示.gif)
+- all the features are integrated into the right-click menu
+![right-click menu demo](./screen/快捷菜单示例.png)
 
 ## Limitations and Notes
 
