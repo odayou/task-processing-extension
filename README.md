@@ -1,6 +1,6 @@
 # Obsidian 任务处理扩展插件
 
-english [README](https://github.com/odayou/task-processing-extension/blob/master/README_en.md)
+[English README](https://github.com/odayou/task-processing-extension/blob/master/README_en.md)
 
 > 一个 [Obsidian](https://obsidian.md/) 插件，用于处理任务的统计、插入任务、插入时刻等功能
 >
