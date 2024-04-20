@@ -23,7 +23,8 @@
 In the edit view, call the command `time total` to insert a block that calculates the time spent on tasks in the current document. It will list the time spent on each task and the total time spent.
 
 ## Demo
-
+- Comprehensive demo
+![Task processing demo](./screen/综合演示.gif)
 - Time statistics of existing tasks
 ![Task time statistics demo](./screen/任务耗时统计演示.gif)
 - Quick commands demo
