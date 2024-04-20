@@ -5,8 +5,6 @@
 > An [Obsidian](https://obsidian.md/) plugin for processing tasks, Features：including time statistics, insertion task, and insertion current time.
 >
 > Developed based on the needs of my own work flow and [the demand of a friend on website](https://forum-zh.obsidian.md/t/topic/30252/4). Any suggestions are welcome.
->
-> This is my first time developing a plugin, and I haven't published it to the plugin center yet.
 
 ## Repository
 
