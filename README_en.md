@@ -22,14 +22,14 @@ In the edit view, in the document that has tasks (standard task format) and time
 
 ## Preview
 
+- Time statistics effect display
+![Time statistics demo](./screen/任务时间花费效果展示.png)
 - Comprehensive demo
 ![Task processing demo](./screen/综合演示.gif)
 - Quick commands demo
 ![Task quick editing demo](./screen/任务快捷编辑演示.gif)
 - All features are integrated into the right-click menu
 ![right-click menu demo](./screen/快捷菜单示例.png)
-- Time statistics effect display
-![Time statistics demo](./screen/任务时间花费效果展示.png)
   
 ## Demo
 
