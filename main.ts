@@ -28,27 +28,27 @@ function insertClockTime(editor: Editor) {
 
 function computeTotalTime(editor: Editor) {
 	let notice = "### 时间花费统计\n---\n";
-	// const file = this.app.workspace.getActiveFile();
+    const data = editor.getValue();
+    let allSum = 0;
+    
+    data.split("\n").forEach((row: any) => {
+        // 提取缩进（匹配行首的空白字符）
+        const indent = row.match(/^(\s*)/)[0] || '';
+        
+        if (row.match(taskExp) == null) return;
 
-	const data = editor.getValue();
-	let allSum = 0;
-	// @ts-ignore
-	data.split("\n").forEach((row: {
-		match: (arg0: RegExp) => null;
-		replaceAll: (arg0: RegExp, arg1: string) => any;
-	}) => {
-		if (row.match(taskExp) == null) {
-			return;
-		}
-		const extractedWithoutCodeblocks = row.replaceAll(taskExp, "");
-		const [taskName, totalSumInMinutes] = computeTaskTime(extractedWithoutCodeblocks)
-		allSum += isNaN(totalSumInMinutes) ? 0 : totalSumInMinutes;
-		notice += `${taskName}: ${minutesToHours(totalSumInMinutes)}小时\n`;
-	})
-	notice += `\n\n---\n花费总时长:${minutesToHours(allSum)}小时\n\n最后统计时间: ${new Date().toLocaleString()}\n\n---\n`;
-	editor.replaceRange(notice, editor.getCursor());
+        const extracted = row.replaceAll(taskExp, "");
+        const [taskName, totalSum] = computeTaskTime(extracted);
+        
+        allSum += isNaN(totalSum) ? 0 : totalSum;
+        notice += `${indent}${taskName}: ${formatMinutes(totalSum)}\n`; // 保留缩进
+    });
+
+    notice += `\n---\n总时长: ${formatMinutes(allSum)}\n最后统计时间: ${new Date().toLocaleString()}\n\n---\n`;
+    editor.replaceRange(notice, editor.getCursor());
 }
 const taskExp = /\s*(-|\*)\s+\[(\s|\w)\]\s+/g
+const timePattern = /\b(\d{1,2}:\d{2})-(\d{1,2}:\d{2})\b/g; // 新增时间匹配模式
 
 export default class TimeSaverPlugin extends Plugin {
 
@@ -116,21 +116,31 @@ export default class TimeSaverPlugin extends Plugin {
 }
 
 function computeTaskTime(taskEventData: string) : any[] {
-	const data = taskEventData.split(" ");
-	const taskName = data[0];
-	let totalSumInMinutes = 0;
-	data.forEach((item, index) => {
-		if (index === 0) {
-			return;
-		}
-		const clocks = item.split("-");
-		if (clocks.length != 2) {
-			return;
-		}
-		const diffInMinutes = clockDiffMinutes(clocks[0], clocks[1]);
-		totalSumInMinutes += isNaN(diffInMinutes) ? 0 : diffInMinutes;
-	})
-	return [taskName, totalSumInMinutes]
+	// 提取所有时间段（兼容前后位置）
+    const timeSlots = [];
+    let match;
+    while ((match = timePattern.exec(taskEventData)) !== null) {
+        timeSlots.push(match[0]);
+    }
+
+    // 提取任务名称（排除时间部分）
+    const taskName = taskEventData.replace(timePattern, '').trim();
+    
+    // 时间计算逻辑
+    let totalSumInMinutes = 0;
+    timeSlots.forEach(item => {
+        const clocks = item.split("-");
+        const diff = clockDiffMinutes(clocks[0], clocks[1]);
+        totalSumInMinutes += isNaN(diff) ? 0 : diff;
+    });
+    
+    return [taskName, totalSumInMinutes];
+}
+
+function formatMinutes(minutes: number): string {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return `${hours}h ${mins}m (${minutesToHours(minutes)}小时)`;
 }
 
 function clockToTime(clockString: string): Date {
