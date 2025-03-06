@@ -48,7 +48,7 @@ function computeTotalTime(editor: Editor) {
     editor.replaceRange(notice, editor.getCursor());
 }
 const taskExp = /\s*(-|\*)\s+\[(\s|\w)\]\s+/g
-const timePattern = /\b(\d{1,2}:\d{2})-(\d{1,2}:\d{2})\b/g; // 新增时间匹配模式
+const timePattern = /\b(\d{1,2}:\d{2})\s*[–-]\s*(\d{1,2}:\d{2})\b/g;
 
 export default class TimeSaverPlugin extends Plugin {
 
