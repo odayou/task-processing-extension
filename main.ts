@@ -1,11 +1,40 @@
-import { Editor, Plugin, Notice, Menu, MenuItem } from 'obsidian';
+import { Editor, Plugin, Notice, Menu, MenuItem, App, PluginSettingTab, Setting } from 'obsidian';
+import en from './locales/en.json';
+import zh_CN from './locales/zh_CN.json';
+
+const languages = {
+    en,
+    zh_CN
+};
+type LanguageKey = keyof typeof languages;
+
+let currentLanguage = getInitialLanguage({} as TimeSaverPluginSettings); // 默认语言
 
 interface TimeSaverPluginSettings {
 	autoCompute: string;
+	language: string; // 新增语言设置
 }
 
 const DEFAULT_SETTINGS: TimeSaverPluginSettings = {
-	autoCompute: 'default'
+	autoCompute: 'disabled',
+	language: getInitialLanguage({} as TimeSaverPluginSettings),
+}
+
+async function loadLanguage(lang: string) {
+    currentLanguage = lang;
+    // 加载对应的语言资源
+    return languages[lang];
+}
+
+async function changeLanguage(lang: string) {
+	await loadLanguage(lang);
+	// 更新界面，重新渲染菜单等
+	this.app.workspace.trigger('app-menu-rebuild');
+}
+
+// 获取多语言文本languages[currentLanguage]
+function lang(key: string) {
+	return languages[currentLanguage as LanguageKey][key] || key;
 }
 
 function insertTaskNotFinished(editor: Editor) {
@@ -27,7 +56,7 @@ function insertClockTime(editor: Editor) {
 }
 
 function computeTotalTime(editor: Editor) {
-	let notice = "### 时间花费统计\n---\n";
+	let notice = `### ${lang("timeSpentAnalysis")}\n---\n`;
     const data = editor.getValue();
     let allSum = 0;
     
@@ -44,16 +73,64 @@ function computeTotalTime(editor: Editor) {
         notice += `${indent}${taskName}: ${formatMinutes(totalSum)}\n`; // 保留缩进
     });
 
-    notice += `\n---\n总时长: ${formatMinutes(allSum)}\n最后统计时间: ${new Date().toLocaleString()}\n\n---\n`;
+    notice += `\n---\n${lang("totalTime")}: ${formatMinutes(allSum)}\n${lang("lastComputeTime")}: ${new Date().toLocaleString()}\n\n---\n`;
     editor.replaceRange(notice, editor.getCursor());
 }
 const taskExp = /\s*(-|\*)\s+\[(\s|\w)\]\s+/g
 const timePattern = /\b(\d{1,2}:\d{2})\s*[–-]\s*(\d{1,2}:\d{2})\b/g;
 
+class TimeSaverSettingTab extends PluginSettingTab {
+    plugin: TimeSaverPlugin;
+
+    constructor(app: App, plugin: TimeSaverPlugin) {
+        super(app, plugin);
+        this.plugin = plugin;
+    }
+
+    display(): void {
+        const { containerEl } = this;
+
+        containerEl.empty();
+
+        // 添加语言设置
+        new Setting(containerEl)
+            .setName('Language')
+            .setDesc('Select the plugin language')
+            .addDropdown((dropdown) => {
+                dropdown
+                    .addOption('en', 'English')
+                    .addOption('zh_CN', '中文')
+                    .setValue(this.plugin.settings.language)
+                    .onChange(async (value) => {
+                        this.plugin.settings.language = value;
+                        await this.plugin.saveSettings();
+                        await changeLanguage(value);
+                    });
+            });
+
+        // 添加自动计算设置
+        new Setting(containerEl)
+            .setName('Auto Compute')
+            .setDesc('Enable or disable auto computation of task times')
+            .addToggle((toggle) => {
+                toggle
+                    .setValue(this.plugin.settings.autoCompute === 'enabled')
+                    .onChange(async (value) => {
+                        this.plugin.settings.autoCompute = value ? 'enabled' : 'disabled';
+                        await this.plugin.saveSettings();
+                    });
+            });
+    }
+}
 export default class TimeSaverPlugin extends Plugin {
 
 	settings: TimeSaverPluginSettings;
 	async onload() {
+
+		await this.loadSettings();
+		// 注册设置页面
+		this.addSettingTab(new TimeSaverSettingTab(this.app, this));
+        await changeLanguage(this.settings.language || 'en'); // 根据设置加载语言
 
 		/**
 		 * 注册编辑器右键监听事件
@@ -63,7 +140,7 @@ export default class TimeSaverPlugin extends Plugin {
 		}));
 		this.addCommand({
 			id: "compute-total-time",
-			name: "Coumpute total time",
+			name: lang("computeTotalTime"),
 			editorCallback: (editor: Editor) => {
 				computeTotalTime(editor);
 			}
@@ -71,7 +148,7 @@ export default class TimeSaverPlugin extends Plugin {
 
 		this.addCommand({
 			id: "copy-url-and-txt",
-			name: "Copy markdown link info",
+			name: lang("copyMarkdownLinkInfo"),
 			editorCallback: (editor: Editor) => {
 				copyMarkDownLinkTextAndInfo(editor)
 			}
@@ -79,7 +156,7 @@ export default class TimeSaverPlugin extends Plugin {
 
 		this.addCommand({
 			id: "insert-task-not-finished",
-			name: "Insert unFinished task",
+			name: lang("insertTaskNotFinished"),
 			editorCallback: (editor) => {
 				insertTaskNotFinished(editor);
 			}
@@ -87,7 +164,7 @@ export default class TimeSaverPlugin extends Plugin {
 
 		this.addCommand({
 			id: "insert-task-finished",
-			name: "Insert finished task",
+			name: lang("insertTaskFinished"),
 			editorCallback: (editor) => {
 				insertTaskFinished(editor);
 			}
@@ -95,7 +172,7 @@ export default class TimeSaverPlugin extends Plugin {
 
 		this.addCommand({
 			id: "insert-clock-time",
-			name: "Insert the current clock time",
+			name: lang("insertClockTime"),
 			editorCallback: (editor) => {
 				insertClockTime(editor);
 			}
@@ -113,6 +190,19 @@ export default class TimeSaverPlugin extends Plugin {
 	async saveSettings() {
 		await this.saveData(this.settings);
 	}
+
+}
+
+function getInitialLanguage(pluginSettings: TimeSaverPluginSettings): string {
+    // 优先级 1: 插件设置
+    if (pluginSettings.language) {
+        return pluginSettings.language;
+    }
+
+    // 优先级 2: Obsidian 设置
+    const obsidianLanguage = (app as any).vault.config?.locale;
+    const lang = obsidianLanguage || navigator.language || 'en';
+	return lang.startsWith('zh') ? 'zh_CN' : 'en';
 }
 
 function computeTaskTime(taskEventData: string) : any[] {
@@ -140,7 +230,7 @@ function computeTaskTime(taskEventData: string) : any[] {
 function formatMinutes(minutes: number): string {
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
-    return `${hours}h ${mins}m (${minutesToHours(minutes)}小时)`;
+    return `${hours}h ${mins}m (${minutesToHours(minutes)}${lang('hours')})`;
 }
 
 function clockToTime(clockString: string): Date {
@@ -230,7 +320,7 @@ function addContextMenu(menu: Menu, editor: Editor) {
 	const markdownLinkFromActiveText = getMarkdownLinkFromCursorPoint(editor);
 	if (markdownLinkFromActiveText) {
 		menu.addItem((menuItem) => {
-			menuItem.setTitle("复制markdown链接");
+			menuItem.setTitle(lang("copyMarkdownLinkInfo"));
 			menuItem.setIcon("copy");
 			menuItem.onClick(() => {
 				copyMarkDownLinkTextAndInfoFromText(markdownLinkFromActiveText)
@@ -238,14 +328,14 @@ function addContextMenu(menu: Menu, editor: Editor) {
 		});
 	}
 	menu.addItem((menuItem) => {
-		menuItem.setTitle("插入待办");
+		menuItem.setTitle(lang("insertTaskNotFinished"));
 		menuItem.setIcon("square");
 		menuItem.onClick(() => {
 			insertTaskNotFinished(editor)
 		});
 	});
 	menu.addItem((menuItem) => {
-		menuItem.setTitle("插入已办");
+		menuItem.setTitle(lang("insertTaskFinished"));
 		menuItem.setIcon("check-square");
 		menuItem.onClick(() => {
 			insertTaskFinished(editor)
@@ -253,14 +343,14 @@ function addContextMenu(menu: Menu, editor: Editor) {
 	});
 
 	menu.addItem((menuItem) => {
-		menuItem.setTitle("计算时间花费");
+		menuItem.setTitle(lang("computeTotalTime"));
 		menuItem.setIcon("calculator");
 		menuItem.onClick(() => {
 			computeTotalTime(editor)
 		});
 	});
 	menu.addItem((menuItem) => {
-		menuItem.setTitle("插入当前时刻");
+		menuItem.setTitle(lang("insertClockTime"));
 		menuItem.setIcon("timer");
 		menuItem.onClick(() => {
 			insertClockTime(editor)
@@ -284,7 +374,8 @@ function copyMarkDownLinkTextAndInfo(editor: Editor) {
  */
 function copyMarkDownLinkTextAndInfoFromText(linkInfo: any) {
 	if (linkInfo == null) {
-		new Notice("没有markdown链接");
+		// new Notice("没有markdown链接");
+		new Notice(lang("noMarkdownLink"));
 		return null;
 	}
 
@@ -292,10 +383,10 @@ function copyMarkDownLinkTextAndInfoFromText(linkInfo: any) {
 	let promise = navigator.clipboard.writeText(linkInfo.text + " " + linkInfo.url);
 	promise.then(
 		() => {
-			new Notice("已复制到剪切板");
+			new Notice(lang("copySuccess"));
 		},
 		() => {
-			new Notice("复制到剪切板失败");
+			new Notice(lang("copyFailed"));
 		}
 	)
 }
