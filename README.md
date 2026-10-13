@@ -12,7 +12,7 @@
 
 ## ✨ 0.0.7 Highlights
 
-- **Four-corner image resizing**: hover either `![[image]]` or `![alt text](image URL)` and drag any corner to resize proportionally. The width is saved; standard Markdown images are converted to HTML images with a width attribute.
+- **Four-corner image resizing**: hover `![[image]]`, `![alt text](image URL)`, or an HTML `<img>` and drag any corner to resize proportionally. Images can be resized repeatedly; standard Markdown images are converted to HTML images with a width attribute.
 - **Three-layer non-intrusive stats UI**: status bar shows current note duration and counted notes live; a right-side panel shows total / by task / by #tag / note count; auto-compute on note open / save / editor blur.
 - **Very forgiving time formats**: Chinese `2026年8月28日10:53`, concatenated date-time `2026-08-2810:53`, en-dash / hyphen mix, seconds precision, dated timestamps — written any reasonable way, it parses.
 - **Cross-note aggregation & Dataview/Bases integration**: one command sums task time across all notes or a chosen folder, grouped by `#tag`, and can write results into each note's frontmatter for database queries.
@@ -36,7 +36,7 @@ In the edit view, in a document that has tasks (standard task format) and time m
 - For the **global view**: open the right-side panel via the left ribbon or the `Toggle TimeSaver panel` command; the status bar shows current-note duration and the count of notes computed.
 - To aggregate **all notes**: run `Compute total time in all notes` (hidden from the right-click menu by default — enable `Show stats entry in context menu` in settings).
 - Auto-compute is always on (no toggle): on note open, editor blur, or file save — silent recompute, no config needed.
-- To resize an image, hover either `![[image]]` or `![alt text](image URL)` in Live Preview and drag any corner handle. The aspect ratio stays fixed, and the width is saved when you release the pointer. Standard Markdown images are converted to HTML images with a width attribute. Adjust the corner-handle inset (0–120 px) under **Settings → Image resizing**.
+- To resize an image, hover `![[image]]`, `![alt text](image URL)`, or an HTML `<img>` in Live Preview and drag any corner handle. The aspect ratio stays fixed, and the width is saved when you release the pointer; you can resize it again later. Standard Markdown images are converted to HTML images with a width attribute. Adjust the corner-handle inset (0–120 px) under **Settings → Image resizing**.
 
 ## Build and install locally
 

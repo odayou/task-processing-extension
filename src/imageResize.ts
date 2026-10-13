@@ -16,7 +16,7 @@ interface ActiveResize {
 	pointerId: number;
 }
 
-const IMAGE_PATTERN = /!\[\[[^\]]+\]\]|!\[[^\]]*\]\([^)]*\)/g;
+const IMAGE_PATTERN = /!\[\[[^\]]+\]\]|!\[[^\]]*\]\([^)]*\)|<img\b[^>]*>/gi;
 const MARKDOWN_IMAGE_PATTERN = /^!\[((?:\\.|[^\]])*)\]\(\s*(<[^>]*>|[^)\s]+)(?:\s+(?:"([^"]*)"|'([^']*)'))?\s*\)$/;
 const MIN_IMAGE_WIDTH = 32;
 type HandleCorner = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
@@ -63,6 +63,14 @@ function findEmbedRange(view: EditorView, image: HTMLImageElement): EmbedRange |
 }
 
 function withImageWidth(embed: string, width: number): string {
+	if (/^<img\b/i.test(embed)) {
+		if (/\swidth\s*=/i.test(embed)) {
+			return embed.replace(/(\swidth\s*=\s*)(?:"[^"]*"|'[^']*'|[^\s>]+)/i, `$1"${width}"`);
+		}
+
+		return embed.replace(/\s*\/?>$/, (ending) => ` width="${width}"${ending.trimStart()}`);
+	}
+
 	if (!embed.startsWith('![[')) {
 		const match = MARKDOWN_IMAGE_PATTERN.exec(embed);
 		if (!match) return embed;
