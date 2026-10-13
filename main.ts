@@ -1,4 +1,4 @@
-import { Editor, Plugin, Notice, Menu, App, PluginSettingTab, Setting, MarkdownView, TFile, Platform } from 'obsidian';
+import { Editor, Plugin, Notice, Menu, App, PluginSettingTab, Setting, MarkdownView, TFile, Platform, EventRef } from 'obsidian';
 import { StatsPanelView, VIEW_TYPE_TIMESAVER_STATS, StatsResult, setPanelI18n, setPanelActions, buildStatsReport } from './src/StatsPanelView';
 import en from './locales/en.json';
 import zh_CN from './locales/zh_CN.json';
@@ -12,7 +12,7 @@ type LanguageKey = keyof typeof languages;
 
 // 持有插件实例，供独立函数读取 settings / app
 let pluginRef: TimeSaverPlugin;
-let currentLanguage = getInitialLanguage({} as TimeSaverPluginSettings); // 默认语言
+let currentLanguage = getInitialLanguage(); // 默认语言
 let statusBarEl: HTMLElement | null = null;
 let lastStats: StatsResult | null = null;
 let lastStatsFile: string | null = null; // lastStats 所属的笔记路径（用于切换聚焦文件时判断是否需要重算）
@@ -36,7 +36,7 @@ interface TimeSaverPluginSettings {
 }
 
 const DEFAULT_SETTINGS: TimeSaverPluginSettings = {
-	language: getInitialLanguage({} as TimeSaverPluginSettings),
+	language: getInitialLanguage(),
 	scope: 'all',
 	folder: '',
 	syncToFrontmatter: false,
@@ -86,32 +86,52 @@ function isTaskLine(row: string): boolean {
 	return /^\s*(-|\*)\s+\[(\s|\w)\]\s+/.test(row);
 }
 
-function debounce<T extends (...args: any[]) => void>(fn: T, ms: number): T {
-	let timer: any;
-	return ((...args: any[]) => {
-		clearTimeout(timer);
-		timer = setTimeout(() => fn(...args), ms);
-	}) as T;
+function debounce<TArgs extends unknown[]>(fn: (...args: TArgs) => void, ms: number): (...args: TArgs) => void {
+	let timer: number | undefined;
+	return (...args: TArgs) => {
+		window.clearTimeout(timer);
+		timer = window.setTimeout(() => fn(...args), ms);
+	};
 }
 
-function insertTaskNotFinished(editor: Editor) {
+function reportAsyncError(operation: string, error: unknown): void {
+	console.error(`[TimeSaver] ${operation} failed`, error);
+	const details = error instanceof Error ? error.message : String(error);
+	new Notice(lang('operationFailed')
+		.replace('{{operation}}', operation)
+		.replace('{{error}}', details), 8000);
+}
+
+function runAsync(operation: string, task: () => Promise<unknown>): void {
+	void task().catch((error: unknown) => reportAsyncError(operation, error));
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function isNumberRecord(value: unknown): value is Record<string, number> {
+	return isRecord(value) && Object.values(value).every((item) => typeof item === 'number');
+}
+
+function getTimeSaverFrontmatter(app: App, file: TFile): Record<string, unknown> | null {
+	const value: unknown = app.metadataCache.getFileCache(file)?.frontmatter?.['time-saver'];
+	return isRecord(value) ? value : null;
+}
+
+function insertTaskNotFinished(editor: Editor): void {
 	editor.replaceSelection("- [ ] ");
 }
 
-function insertTaskFinished(editor: Editor) {
+function insertTaskFinished(editor: Editor): void {
 	editor.replaceSelection("- [x] ");
 }
 
-function insertClockTime(editor: Editor) {
+function insertClockTime(editor: Editor): void {
 	const date = new Date();
 	const hour = date.getHours().toString().padStart(2, '0');
 	const minute = date.getMinutes().toString().padStart(2, '0');
 	editor.replaceSelection(`${hour}:${minute}`);
-}
-
-function computeTotalTime(editor: Editor) {
-	// 保留向后兼容：仅当外部仍直接调用时，等价于导出到笔记
-	exportStatsToNote(editor, pluginRef?.app);
 }
 
 const taskExp = /\s*(-|\*)\s+\[(\s|\w)\]\s+/g
@@ -181,7 +201,7 @@ function getMarkdownEditor(app: App): Editor | null {
 }
 
 // 当前笔记：计算 → 写面板 + (可选)frontmatter，不再自动插入文档正文
-function computeCurrentNote(editor: Editor, app?: App, silent = false) {
+async function computeCurrentNote(editor: Editor, app?: App, silent = false): Promise<void> {
     const { totalMinutes, byTag, lines } = scanContent(editor.getValue());
     lastStats = {
         mode: 'current',
@@ -195,7 +215,7 @@ function computeCurrentNote(editor: Editor, app?: App, silent = false) {
     pushStatsToPanel();
     if (app && pluginRef?.settings.syncToFrontmatter) {
         const file = app.workspace.getActiveFile();
-        if (file) writeFrontmatter(app, file, totalMinutes, byTag);
+        if (file) await writeFrontmatter(app, file, totalMinutes, byTag);
     }
     if (app) {
         const f = app.workspace.getActiveFile();
@@ -229,9 +249,9 @@ async function computeActiveNote(app: App, silent = false) {
     // 例外：用户经「移除统计」显式 opted-out（frontmatter 标记 disabled:true）后，静默自动计算尊重其意愿、不再写回；
     // 手动触发（silent=false，如点计算/导出）始终写入，即用即恢复。
     if (pluginRef?.settings.syncToFrontmatter) {
-        const existing = (app.metadataCache.getFileCache(file)?.frontmatter as any)?.["time-saver"];
-        const optedOut = !!(existing && (existing as any).disabled === true);
-        if (!(silent && optedOut)) writeFrontmatter(app, file, totalMinutes, byTag);
+        const existing = getTimeSaverFrontmatter(app, file);
+        const optedOut = existing?.disabled === true;
+        if (!(silent && optedOut)) await writeFrontmatter(app, file, totalMinutes, byTag);
     }
     noteTotals.set(file.path, totalMinutes);
     lastStatsFile = file.path;
@@ -240,7 +260,7 @@ async function computeActiveNote(app: App, silent = false) {
 }
 
 // 显式「导出到笔记」：插入/更新哨兵统计块（原默认行为，现改为手动触发，保留最高可复制性 + 向后兼容）
-function exportStatsToNote(editor: Editor, app?: App) {
+async function exportStatsToNote(editor: Editor, app?: App): Promise<void> {
     const { totalMinutes, byTag, lines } = scanContent(editor.getValue());
     const body = [
         `### ${lang("timeSpentAnalysis")}`,
@@ -269,7 +289,7 @@ function exportStatsToNote(editor: Editor, app?: App) {
 
     if (app && pluginRef?.settings.syncToFrontmatter) {
         const file = app.workspace.getActiveFile();
-        if (file) writeFrontmatter(app, file, totalMinutes, byTag);
+        if (file) await writeFrontmatter(app, file, totalMinutes, byTag);
     }
     new Notice(lang("exportStatsToNote"), 3000);
 }
@@ -397,14 +417,14 @@ async function collectNoteStats(app: App): Promise<{ path: string; date: string 
     }
     const out: { path: string; date: string | null; minutes: number; byTag: Record<string, number> }[] = [];
     for (const file of files) {
-        const fm: any = (app.metadataCache.getFileCache(file)?.frontmatter as any)?.["time-saver"];
+        const fm = getTimeSaverFrontmatter(app, file);
         let minutes = 0;
         let byTag: Record<string, number> = {};
         if (fm && fm.disabled === true) {
             // 用户经「移除统计」显式退出：按 0 计，不计入聚合/导出
         } else if (fm && typeof fm.total_minutes === 'number') {
             minutes = fm.total_minutes;
-            byTag = fm.by_tag || {};
+            byTag = isNumberRecord(fm.by_tag) ? fm.by_tag : {};
         } else {
             const content = await app.vault.cachedRead(file);
             const r = scanContent(content);
@@ -474,19 +494,29 @@ async function exportStatsCsv(app: App) {
             x.date || '',
             String(x.minutes),
             human,
-            `"${byTagStr}"`
+            `"${byTagStr.replace(/"/g, '""')}"`
         ].join(','));
     }
     const csv = '﻿' + lines.join('\n'); // BOM 便于 Excel 正确识别 UTF-8
 
     // 数据先入剪贴板：无论文件是否写盘成功，统计结果都不会丢失
-    try { await navigator.clipboard.writeText(csv); } catch { /* 剪贴板失败不阻断文件导出 */ }
+    try {
+        await navigator.clipboard.writeText(csv);
+    } catch (error) {
+        console.error('[TimeSaver] Could not copy CSV to clipboard', error);
+        new Notice(lang('copyFail'));
+    }
 
     const fname = `time-saver-export-${new Date().toISOString().slice(0, 10)}.csv`;
     try {
         const existing = app.vault.getAbstractFileByPath(fname);
-        if (existing) await app.vault.delete(existing);
-        await app.vault.create(fname, csv);
+        if (existing instanceof TFile) {
+            await app.vault.modify(existing, csv);
+        } else if (existing) {
+            throw new Error(`Cannot export CSV because "${fname}" is not a file.`);
+        } else {
+            await app.vault.create(fname, csv);
+        }
         new Notice(lang("csvExported").replace("{{path}}", fname), 8000);
     } catch (e) {
         // 写盘失败（最常见：文件已在 Excel 等程序中打开被系统锁定）→ 明确反馈根因，数据已在剪贴板可无损取回
@@ -502,7 +532,7 @@ function fmtH(min: number): string {
 function getStatsPanelView(): StatsPanelView | null {
     const leaves = pluginRef.app.workspace.getLeavesOfType(VIEW_TYPE_TIMESAVER_STATS);
     for (const l of leaves) {
-        if (l.view instanceof StatsPanelView) return l.view as StatsPanelView;
+        if (l.view instanceof StatsPanelView) return l.view;
     }
     return null;
 }
@@ -517,7 +547,7 @@ function ensureStatusBar() {
     if (Platform.isMobile) return;
     if (!pluginRef.settings.showStatusBar) return;
     statusBarEl = pluginRef.addStatusBarItem();
-    statusBarEl.style.cursor = 'pointer';
+    statusBarEl.addClass('ts-status-bar-clickable');
     statusBarEl.setAttribute('aria-label', lang('statusBarMenuHint'));
     statusBarEl.addEventListener('click', (ev: MouseEvent) => showStatusBarMenu(ev));
     refreshStatusBar();
@@ -542,26 +572,24 @@ function showStatusBarMenu(ev: MouseEvent) {
     menu.addItem((item) => {
         item.setTitle(lang('computeTotalTimeInCurrentNote'));
         item.setIcon('calculator');
-        item.onClick(() => {
-            computeActiveNote(pluginRef.app);
-        });
+        item.onClick(() => runAsync(lang('computeTotalTimeInCurrentNote'), () => computeActiveNote(pluginRef.app)));
     });
     menu.addItem((item) => {
         item.setTitle(lang('computeTotalTimeInAllNotes'));
         item.setIcon('list-todo');
-        item.onClick(() => computeTotalTimeInAllNotes(pluginRef.app));
+        item.onClick(() => runAsync(lang('computeTotalTimeInAllNotes'), () => computeTotalTimeInAllNotes(pluginRef.app)));
     });
     menu.addItem((item) => {
         item.setTitle(lang('aggregateDailyNotes'));
         item.setIcon('calendar');
-        item.onClick(() => computeDailyNotes(pluginRef.app));
+        item.onClick(() => runAsync(lang('aggregateDailyNotes'), () => computeDailyNotes(pluginRef.app)));
     });
     menu.addItem((item) => {
         item.setTitle(lang('exportStatsToNote'));
         item.setIcon('file-output');
         item.onClick(() => {
             const e = getMarkdownEditor(pluginRef.app);
-            if (e) exportStatsToNote(e, pluginRef.app);
+            if (e) runAsync(lang('exportStatsToNote'), () => exportStatsToNote(e, pluginRef.app));
             else new Notice(lang('noActiveEditor'));
         });
     });
@@ -570,7 +598,7 @@ function showStatusBarMenu(ev: MouseEvent) {
         item.setIcon('trash');
         item.onClick(() => {
             const e = getMarkdownEditor(pluginRef.app);
-            if (e) removeStatsFromNote(e, pluginRef.app);
+            if (e) runAsync(lang('removeStatsFromNote'), () => removeStatsFromNote(e, pluginRef.app));
             else new Notice(lang('noActiveEditor'));
         });
     });
@@ -578,20 +606,20 @@ function showStatusBarMenu(ev: MouseEvent) {
         item.setTitle(lang('copyStats'));
         item.setIcon('copy');
         item.onClick(() => {
-            copyStatsToClipboard();
+            runAsync(lang('copyStats'), () => copyStatsToClipboard());
         });
     });
     menu.addItem((item) => {
         item.setTitle(lang('exportStatsCsv'));
         item.setIcon('table');
         item.onClick(() => {
-            exportStatsCsv(pluginRef.app);
+            runAsync(lang('exportStatsCsv'), () => exportStatsCsv(pluginRef.app));
         });
     });
     menu.addItem((item) => {
         item.setTitle(lang('togglePanel'));
         item.setIcon('bar-chart-2');
-        item.onClick(() => togglePanel());
+        item.onClick(() => runAsync(lang('togglePanel'), () => togglePanel()));
     });
     menu.showAtMouseEvent(ev);
 }
@@ -606,8 +634,8 @@ function refreshStatusBar() {
         const cached = noteTotals.get(activeFile.path);
         if (cached !== undefined) currentMin = cached;
         else {
-            const fm: any = (app.metadataCache.getFileCache(activeFile)?.frontmatter as any)?.["time-saver"];
-            if (fm && fm.total_minutes) currentMin = fm.total_minutes;
+            const fm = getTimeSaverFrontmatter(app, activeFile);
+            if (fm && typeof fm.total_minutes === 'number') currentMin = fm.total_minutes;
         }
     }
     // 已统计的笔记数（会话内累计，来自 noteTotals），取代无日期锚点的「全部总时长」累加
@@ -703,9 +731,9 @@ class TimeSaverSettingTab extends PluginSettingTab {
                         await this.plugin.saveSettings();
                         if (value) {
                             if (!statusBarEl && !Platform.isMobile) ensureStatusBar();
-                            if (statusBarEl) statusBarEl.style.display = '';
+                            if (statusBarEl) statusBarEl.removeClass('ts-status-bar-hidden');
                         } else if (statusBarEl) {
-                            statusBarEl.style.display = 'none';
+                            statusBarEl.addClass('ts-status-bar-hidden');
                         }
                     });
             });
@@ -826,7 +854,11 @@ class TimeSaverSettingTab extends PluginSettingTab {
 export default class TimeSaverPlugin extends Plugin {
 
 	settings: TimeSaverPluginSettings;
-	async onload() {
+	onload(): void {
+		runAsync('Plugin initialization', () => this.initialize());
+	}
+
+	private async initialize(): Promise<void> {
 		pluginRef = this;
 
 		await this.loadSettings();
@@ -837,19 +869,17 @@ export default class TimeSaverPlugin extends Plugin {
         await changeLanguage(this.settings.language || 'en', this.app); // 根据设置加载语言
         setPanelI18n(lang);
         setPanelActions({
-            computeCurrent: () => {
-                computeActiveNote(this.app);
-            },
-            computeAll: () => computeTotalTimeInAllNotes(this.app),
-            computeDaily: () => computeDailyNotes(this.app),
+            computeCurrent: () => runAsync(lang('computeTotalTimeInCurrentNote'), () => computeActiveNote(this.app)),
+            computeAll: () => runAsync(lang('computeTotalTimeInAllNotes'), () => computeTotalTimeInAllNotes(this.app)),
+            computeDaily: () => runAsync(lang('aggregateDailyNotes'), () => computeDailyNotes(this.app)),
             exportToNote: () => {
                 const e = getMarkdownEditor(this.app);
-                if (e) exportStatsToNote(e, this.app);
+                if (e) runAsync(lang('exportStatsToNote'), () => exportStatsToNote(e, this.app));
                 else new Notice(lang("noActiveEditor"));
             },
             removeStats: () => {
                 const e = getMarkdownEditor(this.app);
-                if (e) removeStatsFromNote(e, this.app);
+                if (e) runAsync(lang('removeStatsFromNote'), () => removeStatsFromNote(e, this.app));
                 else new Notice(lang("noActiveEditor"));
             }
         });
@@ -857,7 +887,7 @@ export default class TimeSaverPlugin extends Plugin {
         // 注册右侧栏面板视图
         this.registerView(VIEW_TYPE_TIMESAVER_STATS, (leaf) => new StatsPanelView(leaf));
         this.addRibbonIcon('bar-chart-2', lang('openTimesaverPanel'), () => {
-            togglePanel();
+            runAsync(lang('togglePanel'), () => togglePanel());
         });
 
         // 自动计算：三态，绝不在输入时静默改写文档
@@ -873,33 +903,25 @@ export default class TimeSaverPlugin extends Plugin {
         this.addCommand({
             id: "compute-total-time",
             name: lang("computeTotalTimeInCurrentNote"),
-            callback: async () => {
-                await computeActiveNote(this.app);
-            }
+            callback: () => runAsync(lang('computeTotalTimeInCurrentNote'), () => computeActiveNote(this.app))
         });
 
         this.addCommand({
             id: "compute-total-time-all-notes",
             name: lang("computeTotalTimeInAllNotes"),
-            callback: async () => {
-                await computeTotalTimeInAllNotes(this.app);
-            }
+            callback: () => runAsync(lang('computeTotalTimeInAllNotes'), () => computeTotalTimeInAllNotes(this.app))
         });
 
         this.addCommand({
             id: "aggregate-daily-notes",
             name: lang("aggregateDailyNotes"),
-            callback: async () => {
-                await computeDailyNotes(this.app);
-            }
+            callback: () => runAsync(lang('aggregateDailyNotes'), () => computeDailyNotes(this.app))
         });
 
         this.addCommand({
             id: "export-stats-csv",
             name: lang("exportStatsCsv"),
-            callback: async () => {
-                await exportStatsCsv(this.app);
-            }
+            callback: () => runAsync(lang('exportStatsCsv'), () => exportStatsCsv(this.app))
         });
 
         this.addCommand({
@@ -908,7 +930,7 @@ export default class TimeSaverPlugin extends Plugin {
             callback: () => {
                 const e = getMarkdownEditor(this.app);
                 if (!e) { new Notice(lang("noActiveEditor")); return; }
-                exportStatsToNote(e, this.app);
+                runAsync(lang('exportStatsToNote'), () => exportStatsToNote(e, this.app));
             }
         });
 
@@ -918,7 +940,7 @@ export default class TimeSaverPlugin extends Plugin {
             callback: () => {
                 const e = getMarkdownEditor(this.app);
                 if (!e) { new Notice(lang("noActiveEditor")); return; }
-                removeStatsFromNote(e, this.app);
+                runAsync(lang('removeStatsFromNote'), () => removeStatsFromNote(e, this.app));
             }
         });
 
@@ -926,7 +948,7 @@ export default class TimeSaverPlugin extends Plugin {
             id: "toggle-timesaver-panel",
             name: lang("togglePanel"),
             callback: () => {
-                togglePanel();
+                runAsync(lang('togglePanel'), () => togglePanel());
             }
         });
 
@@ -965,7 +987,7 @@ export default class TimeSaverPlugin extends Plugin {
         // 状态栏摘要（移动端自动跳过）
         if (this.settings.showStatusBar && !Platform.isMobile) ensureStatusBar();
         // 启动时打开面板
-        if (this.settings.panelDefaultOpen) togglePanel();
+        if (this.settings.panelDefaultOpen) runAsync(lang('togglePanel'), () => togglePanel());
     }
 
     onunload() {
@@ -994,37 +1016,45 @@ function registerAutoCompute() {
             // 聚焦文件变化（打开笔记 / 切换已打开的标签 / Obsidian 启动恢复的记忆文件）时，对当前笔记静默重算。
             // 用 active-leaf-change 而非 file-open：后者在切换已打开标签时不可靠重发，会导致面板/状态栏不跟随聚焦文件。
             const file = app.workspace.getActiveFile();
-            if (file && file.extension === 'md' && file.path !== lastStatsFile) computeActiveNote(app, true);
+            if (file && file.extension === 'md' && file.path !== lastStatsFile) {
+                runAsync(lang('computeTotalTimeInCurrentNote'), () => computeActiveNote(app, true));
+            }
         }, 300))
     );
     pluginRef.registerEvent(
-        (app.workspace as any).on('editor-blur', debounce((editor: Editor) => {
-            computeActiveNote(app, true);
+        (app.workspace as unknown as WorkspaceEventSource).on('editor-blur', debounce(() => {
+            runAsync(lang('computeTotalTimeInCurrentNote'), () => computeActiveNote(app, true));
         }, 500))
     );
     pluginRef.registerEvent(
-        (app.vault as any).on('file-modified', debounce((file: TFile) => {
+        (app.vault as unknown as VaultEventSource).on('file-modified', debounce((file: TFile) => {
             const active = app.workspace.getActiveFile();
             if (active && active.path === file.path) {
-                computeActiveNote(app, true);
+                runAsync(lang('computeTotalTimeInCurrentNote'), () => computeActiveNote(app, true));
             }
         }, 800))
     );
 }
 
-function getInitialLanguage(pluginSettings: TimeSaverPluginSettings): string {
+interface WorkspaceEventSource {
+	on(name: string, callback: (...args: never[]) => void): EventRef;
+}
+
+interface VaultEventSource {
+	on(name: string, callback: (file: TFile) => void): EventRef;
+}
+
+function getInitialLanguage(pluginSettings: Partial<TimeSaverPluginSettings> = {}): string {
     // 优先级 1: 插件设置
     if (pluginSettings.language) {
         return pluginSettings.language;
     }
 
-    // 优先级 2: Obsidian 设置
-    const obsidianLanguage = (app as any).vault.config?.locale;
-    const lang = obsidianLanguage || navigator.language || 'en';
+    const lang = navigator.language || 'en';
 	return lang.startsWith('zh') ? 'zh_CN' : 'en';
 }
 
-function computeTaskTime(taskEventData: string) : any[] {
+function computeTaskTime(taskEventData: string): [string, number] {
     // 复用 timePattern 捕获组：每组时刻 6 个捕获组（年/月/日/时/分/秒），两个时刻共 12 组
     const moments: Date[] = [];
     let match;
@@ -1087,11 +1117,12 @@ function minutesToHours(minutes: number, toFixed = 2) {
 	return diffInHours;
 }
 
-function isMarkdownUrl(str: String) {
-	return str.match(/!\[[^\]]*\]\(([^)]+)\)/) == null
+interface MarkdownLinkInfo {
+	url: string;
+	text: string;
 }
 
-function getMarkdownUrlInfo(str: String) {
+function getMarkdownUrlInfo(str: string): MarkdownLinkInfo {
 	/// 定义正则表达式
 	const regex = /\[([^\]]+)\]\(([^)]+)\)/;
 
@@ -1111,19 +1142,6 @@ function getMarkdownUrlInfo(str: String) {
 			text: ''
 		}
 	}
-}
-
-function isMouseHoverOnMarkdownLink(line: string, cursorPosition: number): boolean {
-	const linkRegex = /\[.*?\]\((.*?)\)/g;
-	let match;
-
-	while ((match = linkRegex.exec(line)) !== null) {
-		if (match.index <= cursorPosition && cursorPosition <= match.index + match[0].length) {
-			return true;
-		}
-	}
-
-	return false;
 }
 
 /**
@@ -1194,28 +1212,28 @@ function addContextMenu(menu: Menu, editor: Editor, app: App) {
 			menuItem.setTitle(lang("computeTotalTimeInCurrentNote"));
 			menuItem.setIcon("calculator");
 			menuItem.onClick(() => {
-				computeCurrentNote(editor, app)
+				runAsync(lang('computeTotalTimeInCurrentNote'), () => computeCurrentNote(editor, app))
 			});
 		});
 		menu.addItem((menuItem) => {
 			menuItem.setTitle(lang("computeTotalTimeInAllNotes"));
 			menuItem.setIcon("list-todo");
 			menuItem.onClick(() => {
-				computeTotalTimeInAllNotes(app)
+				runAsync(lang('computeTotalTimeInAllNotes'), () => computeTotalTimeInAllNotes(app))
 			});
 		});
 		menu.addItem((menuItem) => {
 			menuItem.setTitle(lang("exportStatsToNote"));
 			menuItem.setIcon("file-output");
 			menuItem.onClick(() => {
-				exportStatsToNote(editor, app)
+				runAsync(lang('exportStatsToNote'), () => exportStatsToNote(editor, app))
 			});
 		});
 		menu.addItem((menuItem) => {
 			menuItem.setTitle(lang("removeStatsFromNote"));
 			menuItem.setIcon("trash");
 			menuItem.onClick(() => {
-				removeStatsFromNote(editor, app)
+				runAsync(lang('removeStatsFromNote'), () => removeStatsFromNote(editor, app))
 			});
 		});
 	}
@@ -1235,16 +1253,15 @@ function copyMarkDownLinkTextAndInfo(editor: Editor) {
  * 从文本中复制markdown链接的文本和url到剪切板
  * @param linkInfo
  */
-function copyMarkDownLinkTextAndInfoFromText(linkInfo: any) {
+function copyMarkDownLinkTextAndInfoFromText(linkInfo: MarkdownLinkInfo | null): void {
 	if (linkInfo == null) {
 		// new Notice("没有markdown链接");
 		new Notice(lang("noMarkdownLink"));
-		return null;
+		return;
 	}
 
 	// 复制markdown链接中的文本和url到剪切板
-	let promise = navigator.clipboard.writeText(linkInfo.text + " " + linkInfo.url);
-	promise.then(
+	void navigator.clipboard.writeText(linkInfo.text + " " + linkInfo.url).then(
 		() => {
 			new Notice(lang("copySuccess"));
 		},

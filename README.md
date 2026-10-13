@@ -1,74 +1,74 @@
 # TimeSaver
 
-[English README](https://github.com/odayou/task-processing-extension/blob/master/README_en.md) · [更新日志](./CHANGELOG.md)
+[中文文档](https://github.com/odayou/task-processing-extension/blob/master/README_zh.md) · [Changelog](./CHANGELOG.md)
 
-> 一个 [Obsidian](https://obsidian.md/) 插件，用于统计任务的时间花费
+> An [Obsidian](https://obsidian.md/) plugin for processing tasks.
 >
-> 基于自己的工作流和[一个网友的诉求](https://forum-zh.obsidian.md/t/topic/30252/4)开发的一个 Obsidian 插件，欢迎大家提出宝贵意见。
+> Developed based on the needs of my own work flow and [the demand of a friend on website](https://forum-zh.obsidian.md/t/topic/30252/4). Any suggestions are welcome.
 
-## 仓库地址
+## Repository
 
-[odayou/task-processing-extension](https://github.com/odayou/task-processing-extension)
+[odayou/obsidian-task-processing-extension](https://github.com/odayou/task-processing-extension)
 
-## ✨ 0.0.7 更新亮点
+## ✨ 0.0.7 Highlights
 
-- **实时预览图片四角缩放**：悬停 `![[图片]]` 或 `![替代文本](图片地址)` 图片即可从四角等比例缩放。缩放结果保存为宽度值；标准 Markdown 图片会转换为带宽度属性的 HTML 图片。
-- **三层非侵入式统计 UI**：状态栏实时显示当前笔记耗时与已统计笔记数；右侧栏面板常驻展示总时长 / 按任务 / 按 #标签 / 笔记数；打开 / 保存 / 离开笔记时自动统计（常开，无需配置）。
-- **超强时间格式兼容**：中文 `2026年8月28日10:53`、日期时间直连 `2026-08-2810:53`、en-dash / 连字符混用、秒级精度、带日期时刻——怎么写都能识别。
-- **跨笔记聚合 & Dataview/Bases 联动**：一键汇总所有笔记或指定文件夹的耗时，按 #标签 拆分，并写入 frontmatter 供数据库查询。
-- **设置分组 + 逐项开关**：插入任务 / 时间 / 复制链接、统计右键入口均可独立控制，默认只给你需要的。自动计算已默认常开（打开 / 保存 / 离开笔记时静默统计），无需开关。
+- **Four-corner image resizing**: hover either `![[image]]` or `![alt text](image URL)` and drag any corner to resize proportionally. The width is saved; standard Markdown images are converted to HTML images with a width attribute.
+- **Three-layer non-intrusive stats UI**: status bar shows current note duration and counted notes live; a right-side panel shows total / by task / by #tag / note count; auto-compute on note open / save / editor blur.
+- **Very forgiving time formats**: Chinese `2026年8月28日10:53`, concatenated date-time `2026-08-2810:53`, en-dash / hyphen mix, seconds precision, dated timestamps — written any reasonable way, it parses.
+- **Cross-note aggregation & Dataview/Bases integration**: one command sums task time across all notes or a chosen folder, grouped by `#tag`, and can write results into each note's frontmatter for database queries.
+- **Grouped settings with per-item toggles**: insert task / time / copy link, the stats context-menu entry, and auto-compute are all independently controllable — on by default only where you need them.
 
-## 功能
+## Features
 
-1. 根据记录的明细，统计每项 task 的时间花费（提取当前文档中的 tasks），并展示总花费。
-2. 提供快捷指令：插入待办 / 已办事项、插入当前时刻、复制链接。
-3. 以上指令均可通过命令面板或编辑器右键菜单触发（可逐项开关）。
-4. **状态栏实时摘要（v0.0.6）**：当前笔记耗时与已统计笔记数常驻状态栏（不再展示无日期锚点的「全部总时长」累加）。
-5. **右侧栏统计面板（v0.0.6）**：总时长、按任务明细、按 #标签、含任务笔记数，一键查看全局时间分布。
-6. **跨笔记聚合 & Dataview 联动（v0.0.6）**：`计算所有笔记总时间` 汇总所有笔记（或指定文件夹）的任务，按 `#标签` 分布并统计含任务笔记数（**不展示无日期锚点的总时长累加**）；可选写入每条笔记的 YAML frontmatter。
-7. **超宽松时间格式（v0.0.6）**：支持中文日期、日期时间直连、en-dash / 连字符、秒级与带日期时刻，详见[时间格式支持](#时间格式支持)。
-8. **实时预览图片四角缩放（v0.0.7）**：支持 Obsidian 和标准 Markdown 图片，拖动任意角保持原始宽高比并保存缩放宽度。
+1. Calculate the time spent on each task from the recorded details (extract tasks from the current document) and show the total.
+2. Quick commands: insert pending / completed tasks, insert the current time, copy link.
+3. All commands are available from the command palette or the editor right-click menu (each can be toggled).
+4. **Status bar live summary (v0.0.6)**: current note duration and counted notes stay on the status bar (no date-less "all notes" grand total).
+5. **Right-side stats panel (v0.0.6)**: total time, per-task breakdown, by #tag, and note count — see your global time distribution at a glance.
+6. **Cross-note aggregation & Dataview integration (v0.0.6)**: `Compute total time in all notes` aggregates task time across all notes (or a folder) and groups by `#tag` — the cross-note view shows the #tag breakdown and note count, **not** a date-less grand total; optionally writes into each note's YAML frontmatter.
+7. **Very forgiving time formats (v0.0.6)**: Chinese dates, concatenated date-time, en-dash / hyphen, seconds and dated timestamps — see [Time format support](#time-format-support).
+8. **Four-corner image resizing (v0.0.7)**: supports both Obsidian and standard Markdown images, preserving aspect ratio and saving the resized width.
 
-## 使用方式
+## Usage
 
-在编辑视图下，在具有任务（标准 task 格式）、时间时刻的文档中，调用命令 `total time`（或通过右键菜单 / 面板触发），即可在光标处列出每个任务的时间花费并展示总花费。
+In the edit view, in a document that has tasks (standard task format) and time moments, call the command `total time` (or trigger it via the right-click menu / panel), and the time spent on each task will be listed with the total.
 
-- 想看**全局**：左侧 ribbon 或命令 `切换 TimeSaver 面板` 打开右侧栏面板；状态栏实时显示当前笔记耗时与已统计笔记数。
-- 想汇总**所有笔记**：命令 `计算所有笔记总时间`（默认不进右键菜单，需在设置开启 `右键菜单显示统计入口`）。
-- 想自动更新：自动计算已常开——打开笔记（含 Obsidian 启动恢复的记忆文件）、编辑器失焦、保存文件时都会自动静默重算，无需任何设置。
-- 想调整图片：在实时预览/编辑视图中悬停 `![[图片]]` 或 `![替代文本](图片地址)` 图片，拖动四角任一手柄等比例缩放；松开鼠标后自动保存宽度。标准 Markdown 图片会转换成带宽度属性的 HTML 图片。可在设置 → 图片缩放中调整手柄内缩距离（0–120 像素）。
+- For the **global view**: open the right-side panel via the left ribbon or the `Toggle TimeSaver panel` command; the status bar shows current-note duration and the count of notes computed.
+- To aggregate **all notes**: run `Compute total time in all notes` (hidden from the right-click menu by default — enable `Show stats entry in context menu` in settings).
+- Auto-compute is always on (no toggle): on note open, editor blur, or file save — silent recompute, no config needed.
+- To resize an image, hover either `![[image]]` or `![alt text](image URL)` in Live Preview and drag any corner handle. The aspect ratio stays fixed, and the width is saved when you release the pointer. Standard Markdown images are converted to HTML images with a width attribute. Adjust the corner-handle inset (0–120 px) under **Settings → Image resizing**.
 
-## 构建与本地安装
+## Build and install locally
 
-在插件项目根目录执行：
+Run these commands from the plugin project root:
 
 ```powershell
 npm install
 npm run build
 ```
 
-构建成功后，打包后的 JavaScript 产物为项目根目录下的 `main.js`。本项目不会生成 ZIP；将 `main.js`、`manifest.json` 和 `styles.css` 放在同一个插件目录中即可安装。可将这三个文件复制到库目录下的 `.obsidian/plugins/time-saver/`，然后在 Obsidian「设置 → 第三方插件」中启用 TimeSaver。Windows 上库目录通常位于 `%APPDATA%\obsidian\库名称\.obsidian\plugins\time-saver\`；如果该目录不存在，请先创建。
+The bundled JavaScript output is `main.js` in the project root. The build does not create a ZIP. To install manually, put `main.js`, `manifest.json`, and `styles.css` together in your vault's `.obsidian/plugins/time-saver/` folder, then enable TimeSaver under **Settings → Community plugins**. On Windows, the vault folder is commonly under `%APPDATA%\obsidian\<vault name>\.obsidian\plugins\time-saver\`; create the plugin folder if needed.
 
-`main.js` 是构建生成文件，已被 Git 忽略，不会随普通源码提交；发布时应将它与 `manifest.json`、`styles.css` 一起附加到 GitHub Release。开发时可运行 `npm run dev`，它会监听源码变化并自动重新生成 `main.js`。
+`main.js` is generated and Git-ignored, so it is not included in normal source commits. For a GitHub Release, attach it together with `manifest.json` and `styles.css`. During development, run `npm run dev` to watch source changes and rebuild `main.js` automatically.
 
-## 演示
+## Preview
 
-- 图片四角缩放
-  ![图片缩放控件](./screen/图片缩放控件.png)
-- 时间统计效果展示
-  ![时间统计演示](./screen/任务时间花费效果展示.png)
-- 综合演示
-  ![综合演示](./screen/综合演示.gif)
-- 任务耗时统计演示
-  ![任务耗时统计演示](./screen/任务耗时统计演示.gif)
-- 几个快捷命令演示
-  ![任务快捷编辑演示](./screen/任务快捷编辑演示.gif)
-- 所有功能都集成进了右键菜单
-  ![右键菜单演示](./screen/快捷菜单示例.png)
+- Four-corner image resizing
+  ![Image resize handles](./screen/图片缩放控件.png)
+- Time statistics effect display
+  ![Time statistics demo](./screen/任务时间花费效果展示.png)
+- Comprehensive demo
+  ![Task processing demo](./screen/综合演示.gif)
+- Task time statistics demo
+  ![Task time statistics demo](./screen/任务耗时统计演示.gif)
+- Quick commands demo
+  ![Task quick editing demo](./screen/任务快捷编辑演示.gif)
+- All features are integrated into the right-click menu
+  ![right-click menu demo](./screen/快捷菜单示例.png)
 
-## 示例数据
+## Demo
 
-### 任务
+### Tasks
 
 ```markdown
 - [ ] 10:21-10:30 task1 
@@ -78,7 +78,7 @@ npm run build
     - [ ] 10:00-13:00 19:00-20:20 tast2-2 
 ```
 
-### 统计结果
+### Time statistics
 
 ```markdown
 ### 时间花费统计
@@ -94,82 +94,82 @@ task2 #tag: 0h 50m (0.83小时)
 最后统计时间: 2025/2/27 22:15:22
 ```
 
-## 面板、状态栏与一键统计（v0.0.6）
+## Panel, status bar & one-click stats (v0.0.6)
 
-- **状态栏**：开启 `状态栏` 后，底部状态栏实时显示当前笔记耗时与已统计笔记数（编辑/切换笔记即更新）；**点击状态栏**可弹出快捷菜单：计算当前笔记、计算所有笔记、导出统计、切换面板。**计算当前笔记不再要求处于编辑模式**——阅读模式、文件在其它视图打开、甚至 Obsidian 启动恢复的记忆文件都会自动计算；非 Markdown 文件（如 Canvas）会温和提示而非误报「请打开 Markdown 文件」。
-- **右侧栏面板**：左侧 ribbon 图标或命令 `切换 TimeSaver 面板` 打开；**尚未统计时面板内提供「计算当前笔记 / 按日期统计 / 计算所有笔记」触发按钮**；已统计后展示总时长、按任务明细、按 #标签拆分、含任务笔记数，并内置「刷新」「复制全部」「导出到当前笔记」按钮；按日期聚合结果会额外以「仅统计 daily-notes」明确标示并按天列出。
-- **自动计算（常开）**：打开笔记（含 Obsidian 启动恢复的记忆文件）、编辑器失焦、保存文件三种时机都会自动静默重算当前笔记统计，无需任何开关；计算仅为只读扫描，绝不改写笔记正文。
+- **Status bar**: with `Show status bar` on, the bottom bar shows the current note duration and the count of notes computed, updating as you edit or switch notes; **click the status bar** to open a quick menu: compute current note, compute all notes, export stats, toggle panel. **Computing the current note no longer requires the edit mode** — reading view, a note open in another pane, or even a note restored by Obsidian at startup are all auto-computed; non-Markdown files (e.g. Canvas) show a gentle hint instead of a false "please open a Markdown note" error.
+- **Right-side panel**: open via the left ribbon icon or the `Toggle TimeSaver panel` command; **when no stats yet, the panel shows `Compute current note` / `By date` / `Compute all notes` trigger buttons**; once computed it shows total, per-task detail, by #tag, and note count, with built-in `Refresh`, `Copy all`, and `Export to current note` buttons; date aggregation is additionally labeled "only daily notes" and listed per day.
+- **Auto compute (always on)**: no toggle — it silently recomputes on note open (incl. files restored when Obsidian starts), editor blur, and file save; read-only scan, never rewrites your note.
 
-## 时间格式支持
+## Time format support
 
-TimeSaver 对时间段的写法非常宽容，以下**全部**可被正确识别（均表示同一段 `09:00–11:30` 附近的耗时）：
+TimeSaver is very lenient about how you write a time span. **All** of the following are recognized (each near the same `09:00–11:30` span):
 
-| 写法 | 说明 |
-| --- | --- |
-| `09:00 - 11:30` | 基础写法（空格 + 连字符） |
-| `09:00 – 11:30` | 长横（en-dash `–`）作分隔符 |
-| `09:00:00 - 11:30:00` | 带秒级精度 |
-| `2026-08-28 09:00 - 11:30` | 带日期时刻（西式 `-` 分隔） |
-| `2026/08/28 9:00 - 11:00` | 斜杠日期 + 单数字小时 |
-| `2026年8月28日10:53` | 中文年月日，日期与时间**直连** |
-| `2026/8/2810:53` | 斜杠日期与时间直连 |
-| `2026/08/2810:53` | 补零日期与时间直连 |
-| `2026-08-2810:53` | 连字符日期与时间直连 |
+| Format                       | Note                                                         |
+| ---------------------------- | ------------------------------------------------------------ |
+| `09:00 - 11:30`            | basic (space + hyphen)                                       |
+| `09:00 – 11:30`           | en-dash (`–`) as separator                                |
+| `09:00:00 - 11:30:00`      | with seconds                                                 |
+| `2026-08-28 09:00 - 11:30` | dated moment (western`-`)                                  |
+| `2026/08/28 9:00 - 11:00`  | slash date + single-digit hour                               |
+| `2026年8月28日10:53`       | Chinese year/month/day, date**concatenated** with time |
+| `2026/8/2810:53`           | slash date concatenated with time                            |
+| `2026/08/2810:53`          | zero-padded date concatenated with time                      |
+| `2026-08-2810:53`          | hyphen date concatenated with time                           |
 
-要点：
+Notes:
 
-- 日期与时间之间允许 0 个或多个空白（可直连）。
-- 西式日期分隔符 `-` / `/` 与中文 `年 月 日` 均支持。
-- 结束时刻省略日期时，继承开始时刻的日期，避免跨午夜误判。
+- 0 or more spaces are allowed between date and time (they may be concatenated).
+- Western date separators `-` / `/` and Chinese `年 月 日` are both supported.
+- When the end moment omits the date, it inherits the start moment's date to avoid false midnight wrap-around.
 
-> 说明：这些混排格式没有通用标准（ISO 8601 为 `2026-08-28T10:53`，与日常随笔写法不同；JS `Date.parse` / dayjs 也无法解析中文年月日），因此采用正则显式覆盖常见写法，按需扩展即可。
+> Note: these mixed formats have no universal standard (ISO 8601 is `2026-08-28T10:53`, different from everyday notes; JS `Date.parse` / dayjs can't parse Chinese year/month/day either), so common writings are covered explicitly via regex and can be extended as needed.
 
-## 跨笔记统计与 Dataview 联动（v0.0.6）
+## Cross-note aggregation & Dataview integration (v0.0.6)
 
-### 设置
+### Settings
 
-插件设置页新增三项：
+Three new options in the plugin settings:
 
-- **统计范围（Scope）**：`所有笔记` 或 `指定文件夹`。选「指定文件夹」时需填写仓库相对路径，例如 `tasks/daily`。
-- **文件夹（Folder）**：仅当统计范围 = 指定文件夹时生效。
-- **同步到 frontmatter（Sync to frontmatter）**：开启后，运行聚合命令会把每条含任务笔记的计算结果写入其 YAML。
+- **Scope**: `All notes` or `Specific folder`. When `Specific folder` is selected, provide a vault-relative path such as `tasks/daily`.
+- **Folder**: only used when Scope = Specific folder.
+- **Sync to frontmatter**: when enabled, running the aggregation command writes each task-bearing note's result into its YAML.
 
-### 用法
+### Usage
 
-在编辑器右键菜单，或命令面板调用 `计算所有笔记总时间`（计算所有笔记总时间）。插件会扫描目标笔记中的任务并弹窗汇总：
+From the editor right-click menu, or the command palette, run `Compute total time in all notes`. The plugin scans the target notes and shows a notice with:
 
-- 所有笔记的按 `#标签` 分布与含任务笔记数（**不展示无日期锚点的总时长累加**）
-- 含任务的笔记数量
-- 按 `#标签` 排序的耗时明细（例如 `#写作 2h 30m`）
+- The #tag breakdown across all notes (no date-less grand total shown)
+- Number of notes that contain tasks
+- A `#tag`-sorted breakdown (e.g. `#writing 2h 30m`)
 
-### frontmatter 结构
+### Frontmatter structure
 
-开启「同步到 frontmatter」后，每条含任务的笔记头部会变成：
+With "Sync to frontmatter" on, each task-bearing note gets:
 
 ```yaml
 ---
 time-saver:
   total_minutes: 589
   by_tag:
-    写作: 270
-    会议: 90
-    运维: 229
+    writing: 270
+    meeting: 90
+    ops: 229
 ---
 ```
 
-### 用 Dataview 查询
+### Query with Dataview
 
-安装 [Dataview](https://github.com/dataviewjs/dataview) 后，即可把 TimeSaver 的输出当数据库查询。
+With [Dataview](https://github.com/dataviewjs/dataview) installed, treat TimeSaver's output as a database.
 
-**列出每个笔记的耗时（DQL）：**
+**List each note's time (DQL):**
 
 ```dataview
-TABLE `time-saver`.total_minutes AS 分钟, `time-saver`.by_tag AS 按标签
+TABLE `time-saver`.total_minutes AS Minutes, `time-saver`.by_tag AS ByTag
 FROM "tasks"
 WHERE `time-saver`
 ```
 
-**跨笔记按标签汇总（DataviewJS）：**
+**Cross-note tag summary (DataviewJS):**
 
 ```dataviewjs
 const pages = dv.pages('"tasks"').where(p => p["time-saver"]);
@@ -180,54 +180,54 @@ for (const p of pages) {
   const tags = p["time-saver"].by_tag || {};
   for (const [t, m] of Object.entries(tags)) byTag[t] = (byTag[t] || 0) + m;
 }
-dv.paragraph("总时长：" + (total / 60).toFixed(1) + " 小时");
-dv.table(["标签", "分钟"], Object.entries(byTag).sort((a, b) => b[1] - a[1]).map(([t, m]) => [t, m]));
+dv.paragraph("Total: " + (total / 60).toFixed(1) + " hours");
+dv.table(["Tag", "Minutes"], Object.entries(byTag).sort((a, b) => b[1] - a[1]).map(([t, m]) => [t, m]));
 ```
 
-> 提示：`time-saver` 含连字符，DataviewJS 中请用方括号写法 `p["time-saver"]` 访问。
+> Tip: `time-saver` contains a hyphen, so in DataviewJS access it with bracket notation `p["time-saver"]`.
 
-## 按日期聚合（daily-notes）
+## Aggregate by date (daily notes)
 
-命令 `按日期聚合（daily-notes）`（或状态栏菜单「按日期聚合」、面板「按日期统计」按钮）会把**所有名为日期的日记笔记**按天汇总，回答「这天 / 这周花了多少时间」。
+The command `Aggregate by date (daily notes)` (or the status-bar menu "Aggregate by date", or the panel "By date" button) groups **all date-named daily notes** by day, answering "how much did I spend this day / week".
 
-> **重要且明确的预期**：本视图**只统计 daily-notes**——文件名形如 `2026-08-28` / `2026.08.28` / `2026/08/28` 的笔记。普通笔记（如 `项目A.md`）没有可靠的日期锚点，**不会被计入**，也不在结果里出现。这是刻意的边界，避免把无日期的笔记强行拼进时间线。
+> **Important and explicit expectation**: this view **only covers daily notes** — notes whose filename looks like `2026-08-28` / `2026.08.28` / `2026/08/28`. Ordinary notes (e.g. `ProjectA.md`) have no reliable date anchor, **are not counted** and never appear in the result. This is a deliberate boundary, so we don't force date-less notes into a timeline.
 
-- 面板顶部以灰色小字明确标示「仅统计 daily-notes（文件名形如 2026-08-28 …）」。
-- 结果按日期**降序**排列（最近的一天在最上），每天显示当天总时长与按 #标签 拆分。
-- 耗时来源：优先读每条笔记的 frontmatter（开启同步时），否则扫描正文；经「移除统计」标记为 `disabled` 的笔记按 0 计、自动排除。
-- 与「统计范围 / 文件夹」设置联动：若设为指定文件夹，只在该文件夹内挑 daily-notes。
+- The panel tops with a grey note: "Only daily notes (filename like 2026-08-28 …)".
+- Results are sorted **descending by date** (most recent on top); each day shows its total and #tag breakdown.
+- Time source: frontmatter first (when sync is on), otherwise a body scan; notes marked `disabled` via "Remove stats" count as 0 and are excluded.
+- Honors the `Scope` / `Folder` settings: if scoped to a folder, only daily notes inside it are picked.
 
-## 导出为 CSV
+## Export as CSV
 
-命令 `导出统计为 CSV`（或状态栏菜单「导出统计为 CSV」）会扫描当前统计范围内的所有笔记，生成**逐笔记**的 CSV：
+The command `Export stats as CSV` (or the status-bar menu "Export stats as CSV") scans all notes in the current scope and produces a **per-note** CSV:
 
-| 列 | 含义 |
-| --- | --- |
-| `note` / `path` | 文件名 / 仓库内路径 |
-| `is_daily` / `date` | 是否为日记笔记 / 日记日期（非日记留空） |
-| `total_minutes` | 该笔记总耗时（分钟） |
-| `total_human` | 人类可读，如 `2h30m` |
-| `by_tag` | 该笔记按 #标签 拆分，如 `#写作:150; #会议:90` |
+| Column                  | Meaning                                                            |
+| ----------------------- | ------------------------------------------------------------------ |
+| `note` / `path`     | filename / vault path                                              |
+| `is_daily` / `date` | whether it's a daily note / the daily date (blank for non-dailies) |
+| `total_minutes`       | total minutes for the note                                         |
+| `total_human`         | human-readable, e.g.`2h30m`                                      |
+| `by_tag`              | per-#tag split, e.g. `#writing:150; #meeting:90`                 |
 
-- 文件写入仓库根目录 `time-saver-export-YYYY-MM-DD.csv`（带 UTF-8 BOM，Excel 直接打开不乱码），**同时复制到剪贴板**，方便粘贴到表格 / 发票 / 其它工具。
-- CSV 把数据交还给你，可自由做图表、计费或迁移到 Toggl 等工具。
+- Written to the vault root as `time-saver-export-YYYY-MM-DD.csv` (UTF-8 BOM, opens cleanly in Excel), **and copied to the clipboard** for pasting into a sheet / invoice / other tool.
+- CSV hands your data back to you — chart it, bill it, or migrate to Toggl etc.
 
-## 移动端
+## Mobile
 
-- 命令（`计算当前/所有笔记`、`按日期聚合`、`导出 CSV` 等）与右侧面板在 **Obsidian 移动端同样可用**，触发方式：
-  - 左侧 **ribbon 图标** 打开 TimeSaver 面板（面板内有「计算 / 按日期统计 / 刷新 / 导出」按钮）；
-  - **命令面板**（Ctrl/Cmd+P）直接调用任意命令。
-- 移动端**没有状态栏菜单入口**（Obsidian 移动端不渲染插件状态栏项），自动计算（打开/失焦/保存）在移动端照常静默工作。
+- Commands (`Compute current/all notes`, `Aggregate by date`, `Export CSV`, …) and the right-side panel are **also available on Obsidian mobile**, triggered via:
+  - the left **ribbon icon** opens the TimeSaver panel (which has `Compute / By date / Refresh / Export` buttons);
+  - the **command palette** (Ctrl/Cmd+P) to invoke any command directly.
+- Mobile has **no status-bar menu entry** (Obsidian mobile doesn't render plugin status-bar items); auto-compute (open / blur / save) still works silently on mobile.
 
-## 设置说明（v0.0.6）
+## Settings overview (v0.0.6)
 
-设置页按类型分组，关键开关：
+Settings are grouped by type. Key toggles:
 
-- **通用**：界面语言。
-- **插入功能**：`插入任务`、`插入时间`、`复制链接`（默认开；关掉后对应命令不再出现在右键菜单）。
-- **统计与面板**：`状态栏`、`启动时打开面板`、`右键菜单显示统计入口`（默认关）。（自动计算已默认常开，无需开关）
-- **跨笔记聚合**：`统计范围`、`文件夹`、`同步到 frontmatter`。
+- **General**: UI language.
+- **Insert features**: `Insert task`, `Insert time`, `Copy link` (on by default; turn off to hide from the context menu).
+- **Stats & panel**: `Status bar`, `Open panel on startup`, `Show stats entry in context menu` (off by default). (Auto-compute is always on — no toggle.)
+- **Cross-note aggregation**: `Scope`, `Folder`, `Sync to frontmatter`.
 
-## 更新日志
+## Changelog
 
-见 [CHANGELOG.md](./CHANGELOG.md)。
+See [CHANGELOG.md](./CHANGELOG.md).

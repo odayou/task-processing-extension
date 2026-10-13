@@ -7,6 +7,14 @@
 	color: var(--text-normal);
 }
 
+.ts-status-bar-clickable {
+	cursor: pointer;
+}
+
+.ts-status-bar-hidden {
+	display: none;
+}
+
 .ts-header {
 	display: flex;
 	align-items: center;

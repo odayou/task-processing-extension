@@ -172,7 +172,9 @@ export class StatsPanelView extends ItemView {
 			else if (d.mode === 'all') panelActions?.computeAll();
 			else panelActions?.computeCurrent();
 		});
-		mkBtn(i18n('copyAll'), () => this.copyAll());
+		mkBtn(i18n('copyAll'), () => {
+			void this.copyAll();
+		});
 		mkBtn(i18n('exportStatsToNote'), () => panelActions?.exportToNote());
 		mkBtn(i18n('removeStatsFromNote'), () => panelActions?.removeStats?.(), 'warning');
 	}
@@ -187,7 +189,8 @@ export class StatsPanelView extends ItemView {
 		try {
 			await navigator.clipboard.writeText(text);
 			new Notice(i18n('copySuccess'));
-		} catch {
+		} catch (error) {
+			console.error('[TimeSaver] Clipboard copy failed', error);
 			new Notice(i18n('copyFail'));
 		}
 	}

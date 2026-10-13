@@ -102,12 +102,12 @@ class ImageResizePlugin implements PluginValue {
 	private hoveredImage: HTMLImageElement | null = null;
 
 	constructor(private view: EditorView) {
-		this.overlay = document.createElement('div');
+		this.overlay = createEl('div');
 		this.overlay.className = 'ts-image-resize-overlay';
 		this.overlay.setAttribute('aria-hidden', 'true');
 
 		HANDLE_CORNERS.forEach((corner) => {
-			const handle = document.createElement('button');
+			const handle = createEl('button');
 			handle.type = 'button';
 			handle.className = `ts-image-resize-handle ts-image-resize-${corner}`;
 			handle.addEventListener('pointerdown', this.onPointerDown);
