@@ -132,3 +132,47 @@
 	color: var(--text-muted);
 	font-size: 13px;
 }
+
+.ts-image-resize-overlay {
+	position: fixed;
+	z-index: 1000;
+	display: none;
+	pointer-events: none;
+}
+
+.ts-image-resize-overlay .ts-image-resize-handle {
+	position: absolute;
+	z-index: 1001;
+	width: 22px;
+	height: 22px;
+	padding: 0;
+	border: 1px solid var(--background-primary);
+	border-radius: 50%;
+	background: var(--interactive-accent);
+	box-shadow: 0 0 0 1px var(--interactive-accent);
+	cursor: nwse-resize;
+	pointer-events: auto;
+	touch-action: none;
+}
+
+.ts-image-resize-overlay .ts-image-resize-top-left {
+	top: var(--ts-image-resize-inset, 48px);
+	left: var(--ts-image-resize-inset, 48px);
+}
+
+.ts-image-resize-overlay .ts-image-resize-top-right {
+	top: var(--ts-image-resize-inset, 48px);
+	right: var(--ts-image-resize-inset, 48px);
+	cursor: nesw-resize;
+}
+
+.ts-image-resize-overlay .ts-image-resize-bottom-left {
+	bottom: var(--ts-image-resize-inset, 48px);
+	left: var(--ts-image-resize-inset, 48px);
+	cursor: nesw-resize;
+}
+
+.ts-image-resize-overlay .ts-image-resize-bottom-right {
+	right: var(--ts-image-resize-inset, 48px);
+	bottom: var(--ts-image-resize-inset, 48px);
+}

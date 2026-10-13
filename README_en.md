@@ -10,8 +10,9 @@
 
 [odayou/obsidian-task-processing-extension](https://github.com/odayou/task-processing-extension)
 
-## ✨ 0.0.6 Highlights
+## ✨ 0.0.7 Highlights
 
+- **Four-corner image resizing**: hover either `![[image]]` or `![alt text](image URL)` and drag any corner to resize proportionally. The width is saved; standard Markdown images are converted to HTML images with a width attribute.
 - **Three-layer non-intrusive stats UI**: status bar shows current note duration and counted notes live; a right-side panel shows total / by task / by #tag / note count; auto-compute on note open / save / editor blur.
 - **Very forgiving time formats**: Chinese `2026年8月28日10:53`, concatenated date-time `2026-08-2810:53`, en-dash / hyphen mix, seconds precision, dated timestamps — written any reasonable way, it parses.
 - **Cross-note aggregation & Dataview/Bases integration**: one command sums task time across all notes or a chosen folder, grouped by `#tag`, and can write results into each note's frontmatter for database queries.
@@ -26,6 +27,7 @@
 5. **Right-side stats panel (v0.0.6)**: total time, per-task breakdown, by #tag, and note count — see your global time distribution at a glance.
 6. **Cross-note aggregation & Dataview integration (v0.0.6)**: `Compute total time in all notes` aggregates task time across all notes (or a folder) and groups by `#tag` — the cross-note view shows the #tag breakdown and note count, **not** a date-less grand total; optionally writes into each note's YAML frontmatter.
 7. **Very forgiving time formats (v0.0.6)**: Chinese dates, concatenated date-time, en-dash / hyphen, seconds and dated timestamps — see [Time format support](#time-format-support).
+8. **Four-corner image resizing (v0.0.7)**: supports both Obsidian and standard Markdown images, preserving aspect ratio and saving the resized width.
 
 ## Usage
 
@@ -34,9 +36,25 @@ In the edit view, in a document that has tasks (standard task format) and time m
 - For the **global view**: open the right-side panel via the left ribbon or the `Toggle TimeSaver panel` command; the status bar shows current-note duration and the count of notes computed.
 - To aggregate **all notes**: run `Compute total time in all notes` (hidden from the right-click menu by default — enable `Show stats entry in context menu` in settings).
 - Auto-compute is always on (no toggle): on note open, editor blur, or file save — silent recompute, no config needed.
+- To resize an image, hover either `![[image]]` or `![alt text](image URL)` in Live Preview and drag any corner handle. The aspect ratio stays fixed, and the width is saved when you release the pointer. Standard Markdown images are converted to HTML images with a width attribute. Adjust the corner-handle inset (0–120 px) under **Settings → Image resizing**.
+
+## Build and install locally
+
+Run these commands from the plugin project root:
+
+```powershell
+npm install
+npm run build
+```
+
+The bundled JavaScript output is `main.js` in the project root. The build does not create a ZIP. To install manually, put `main.js`, `manifest.json`, and `styles.css` together in your vault's `.obsidian/plugins/time-saver/` folder, then enable TimeSaver under **Settings → Community plugins**. On Windows, the vault folder is commonly under `%APPDATA%\obsidian\<vault name>\.obsidian\plugins\time-saver\`; create the plugin folder if needed.
+
+`main.js` is generated and Git-ignored, so it is not included in normal source commits. For a GitHub Release, attach it together with `manifest.json` and `styles.css`. During development, run `npm run dev` to watch source changes and rebuild `main.js` automatically.
 
 ## Preview
 
+- Four-corner image resizing
+  ![Image resize handles](./screen/图片缩放控件.png)
 - Time statistics effect display
   ![Time statistics demo](./screen/任务时间花费效果展示.png)
 - Comprehensive demo
@@ -86,17 +104,17 @@ task2 #tag: 0h 50m (0.83小时)
 
 TimeSaver is very lenient about how you write a time span. **All** of the following are recognized (each near the same `09:00–11:30` span):
 
-| Format | Note |
-| --- | --- |
-| `09:00 - 11:30` | basic (space + hyphen) |
-| `09:00 – 11:30` | en-dash (`–`) as separator |
-| `09:00:00 - 11:30:00` | with seconds |
-| `2026-08-28 09:00 - 11:30` | dated moment (western `-`) |
-| `2026/08/28 9:00 - 11:00` | slash date + single-digit hour |
-| `2026年8月28日10:53` | Chinese year/month/day, date **concatenated** with time |
-| `2026/8/2810:53` | slash date concatenated with time |
-| `2026/08/2810:53` | zero-padded date concatenated with time |
-| `2026-08-2810:53` | hyphen date concatenated with time |
+| Format                       | Note                                                         |
+| ---------------------------- | ------------------------------------------------------------ |
+| `09:00 - 11:30`            | basic (space + hyphen)                                       |
+| `09:00 – 11:30`           | en-dash (`–`) as separator                                |
+| `09:00:00 - 11:30:00`      | with seconds                                                 |
+| `2026-08-28 09:00 - 11:30` | dated moment (western`-`)                                  |
+| `2026/08/28 9:00 - 11:00`  | slash date + single-digit hour                               |
+| `2026年8月28日10:53`       | Chinese year/month/day, date**concatenated** with time |
+| `2026/8/2810:53`           | slash date concatenated with time                            |
+| `2026/08/2810:53`          | zero-padded date concatenated with time                      |
+| `2026-08-2810:53`          | hyphen date concatenated with time                           |
 
 Notes:
 
@@ -183,13 +201,13 @@ The command `Aggregate by date (daily notes)` (or the status-bar menu "Aggregate
 
 The command `Export stats as CSV` (or the status-bar menu "Export stats as CSV") scans all notes in the current scope and produces a **per-note** CSV:
 
-| Column | Meaning |
-| --- | --- |
-| `note` / `path` | filename / vault path |
+| Column                  | Meaning                                                            |
+| ----------------------- | ------------------------------------------------------------------ |
+| `note` / `path`     | filename / vault path                                              |
 | `is_daily` / `date` | whether it's a daily note / the daily date (blank for non-dailies) |
-| `total_minutes` | total minutes for the note |
-| `total_human` | human-readable, e.g. `2h30m` |
-| `by_tag` | per-#tag split, e.g. `#writing:150; #meeting:90` |
+| `total_minutes`       | total minutes for the note                                         |
+| `total_human`         | human-readable, e.g.`2h30m`                                      |
+| `by_tag`              | per-#tag split, e.g. `#writing:150; #meeting:90`                 |
 
 - Written to the vault root as `time-saver-export-YYYY-MM-DD.csv` (UTF-8 BOM, opens cleanly in Excel), **and copied to the clipboard** for pasting into a sheet / invoice / other tool.
 - CSV hands your data back to you — chart it, bill it, or migrate to Toggl etc.

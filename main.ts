@@ -2,6 +2,7 @@ import { Editor, Plugin, Notice, Menu, App, PluginSettingTab, Setting, MarkdownV
 import { StatsPanelView, VIEW_TYPE_TIMESAVER_STATS, StatsResult, setPanelI18n, setPanelActions, buildStatsReport } from './src/StatsPanelView';
 import en from './locales/en.json';
 import zh_CN from './locales/zh_CN.json';
+import { createImageResizeExtension, setImageResizeHandleLabels, setImageResizeInset } from './src/imageResize';
 
 const languages = {
     en,
@@ -31,6 +32,7 @@ interface TimeSaverPluginSettings {
 	enableInsertTime: boolean; // 右键菜单「插入时间」命令开关（默认开）
 	enableCopyLink: boolean; // 右键菜单「复制链接」命令开关（默认开）
 	panelDefaultOpen: boolean; // 启动时是否自动打开面板
+	imageResizeInset: number; // 图片缩放手柄距图片边缘的距离（像素）
 }
 
 const DEFAULT_SETTINGS: TimeSaverPluginSettings = {
@@ -44,6 +46,7 @@ const DEFAULT_SETTINGS: TimeSaverPluginSettings = {
 	enableInsertTime: true,
 	enableCopyLink: true,
 	panelDefaultOpen: false,
+	imageResizeInset: 36,
 }
 
 async function loadLanguage(lang: string) {
@@ -52,8 +55,14 @@ async function loadLanguage(lang: string) {
     return languages[lang as LanguageKey];
 }
 
-async function changeLanguage(lang: string, app: App) {
-	await loadLanguage(lang);
+async function changeLanguage(language: string, app: App) {
+	await loadLanguage(language);
+	setImageResizeHandleLabels({
+		'top-left': lang("imageResizeHandleTopLeft"),
+		'top-right': lang("imageResizeHandleTopRight"),
+		'bottom-left': lang("imageResizeHandleBottomLeft"),
+		'bottom-right': lang("imageResizeHandleBottomRight")
+	});
 	// 更新界面，重新渲染菜单等
 	app.workspace.trigger('app-menu-rebuild');
 }
@@ -645,8 +654,8 @@ class TimeSaverSettingTab extends PluginSettingTab {
 
         // 添加语言设置
         new Setting(containerEl)
-            .setName('Language')
-            .setDesc('Select the plugin language')
+            .setName(lang("interfaceLanguage"))
+            .setDesc(lang("interfaceLanguageDesc"))
             .addDropdown((dropdown) => {
                 dropdown
                     .addOption('en', 'English')
@@ -659,44 +668,24 @@ class TimeSaverSettingTab extends PluginSettingTab {
                     });
             });
 
-        // ===== 插入功能 =====
-        new Setting(containerEl).setName(lang("groupInsert")).setHeading();
+        // ===== 图片缩放 =====
+        new Setting(containerEl).setName(lang("groupImages")).setHeading();
 
-        new Setting(containerEl)
-            .setName(lang("enableInsertTask"))
-            .setDesc(lang("enableInsertTaskDesc"))
-            .addToggle((toggle) => {
-                toggle
-                    .setValue(this.plugin.settings.enableInsertTask)
-                    .onChange(async (value) => {
-                        this.plugin.settings.enableInsertTask = value;
-                        await this.plugin.saveSettings();
-                    });
-            });
-
-        new Setting(containerEl)
-            .setName(lang("enableInsertTime"))
-            .setDesc(lang("enableInsertTimeDesc"))
-            .addToggle((toggle) => {
-                toggle
-                    .setValue(this.plugin.settings.enableInsertTime)
-                    .onChange(async (value) => {
-                        this.plugin.settings.enableInsertTime = value;
-                        await this.plugin.saveSettings();
-                    });
-            });
-
-        new Setting(containerEl)
-            .setName(lang("enableCopyLink"))
-            .setDesc(lang("enableCopyLinkDesc"))
-            .addToggle((toggle) => {
-                toggle
-                    .setValue(this.plugin.settings.enableCopyLink)
-                    .onChange(async (value) => {
-                        this.plugin.settings.enableCopyLink = value;
-                        await this.plugin.saveSettings();
-                    });
-            });
+        const imageResizeInsetSetting = new Setting(containerEl)
+            .setName(`${lang("imageResizeInset")} (${this.plugin.settings.imageResizeInset}px)`)
+            .setDesc(lang("imageResizeInsetDesc"));
+        imageResizeInsetSetting.addSlider((slider) => {
+            slider
+                .setLimits(0, 120, 2)
+                .setValue(this.plugin.settings.imageResizeInset)
+                .setDynamicTooltip()
+                .onChange(async (value) => {
+                    this.plugin.settings.imageResizeInset = value;
+                    imageResizeInsetSetting.setName(`${lang("imageResizeInset")} (${value}px)`);
+                    setImageResizeInset(value);
+                    await this.plugin.saveSettings();
+                });
+        });
 
 
         // ===== 统计与面板 =====
@@ -747,6 +736,45 @@ class TimeSaverSettingTab extends PluginSettingTab {
                     });
             });
 
+        // ===== 插入功能 =====
+        new Setting(containerEl).setName(lang("groupInsert")).setHeading();
+
+        new Setting(containerEl)
+            .setName(lang("enableInsertTask"))
+            .setDesc(lang("enableInsertTaskDesc"))
+            .addToggle((toggle) => {
+                toggle
+                    .setValue(this.plugin.settings.enableInsertTask)
+                    .onChange(async (value) => {
+                        this.plugin.settings.enableInsertTask = value;
+                        await this.plugin.saveSettings();
+                    });
+        });
+
+        new Setting(containerEl)
+            .setName(lang("enableInsertTime"))
+            .setDesc(lang("enableInsertTimeDesc"))
+            .addToggle((toggle) => {
+                toggle
+                    .setValue(this.plugin.settings.enableInsertTime)
+                    .onChange(async (value) => {
+                        this.plugin.settings.enableInsertTime = value;
+                        await this.plugin.saveSettings();
+                    });
+            });
+
+        new Setting(containerEl)
+            .setName(lang("enableCopyLink"))
+            .setDesc(lang("enableCopyLinkDesc"))
+            .addToggle((toggle) => {
+                toggle
+                    .setValue(this.plugin.settings.enableCopyLink)
+                    .onChange(async (value) => {
+                        this.plugin.settings.enableCopyLink = value;
+                        await this.plugin.saveSettings();
+                    });
+            });
+            
         // ===== 跨笔记聚合 =====
         new Setting(containerEl).setName(lang("groupAggregation")).setHeading();
 
@@ -802,6 +830,8 @@ export default class TimeSaverPlugin extends Plugin {
 		pluginRef = this;
 
 		await this.loadSettings();
+		setImageResizeInset(this.settings.imageResizeInset);
+		this.registerEditorExtension(createImageResizeExtension());
 		// 注册设置页面
 		this.addSettingTab(new TimeSaverSettingTab(this.app, this));
         await changeLanguage(this.settings.language || 'en', this.app); // 根据设置加载语言
